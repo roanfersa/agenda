@@ -1,0 +1,29 @@
+-- Seed opcional para AMBIENTE DE DEMO. Não rode em produção.
+-- Requer um usuário já criado no Supabase Auth; troque :uid pelo id dele
+-- (Authentication → Users). O trigger handle_new_user já cria a linha em
+-- professionals no signup; aqui só preenchemos dados de exemplo + um funil.
+
+-- Exemplo (rode manualmente substituindo o UUID):
+--
+-- update professionals set
+--   nome = 'Osvaldo Reis',
+--   handle_instagram = '@osvaldo.terapia',
+--   especialidade = 'Terapeuta tântrico',
+--   atende = 'Online e presencial',
+--   whatsapp = '5511998877665',
+--   consentimento_texto_padrao = 'Autorizo o tratamento dos meus dados conforme a LGPD.',
+--   onboarding_done = true
+-- where id = '<UID>';
+--
+-- insert into funnels (professional_id, slug, nome, uso, objetivo, status,
+--   mensagem_boas_vindas, perguntas, consentimento_texto)
+-- values (
+--   '<UID>', 'osvaldo', 'Primeira sessão', 'Bio do Instagram', 'agendar', 'publicado',
+--   'Oi! Me responde rapidinho pra eu entender como te ajudar.',
+--   '[{"id":"q1","texto":"O que te interessa?","tipo":"opcoes","opcoes":["Primeira sessão","Retorno"],"obrigatoria":true}]'::jsonb,
+--   'Autorizo o contato conforme a LGPD.'
+-- );
+
+-- Para habilitar o painel admin a um usuário, insira-o em internal_users:
+-- insert into internal_users (id, nome, email, papel)
+-- values ('<UID>', 'Ana Beatriz', 'ana@empresa.com.br', 'admin');

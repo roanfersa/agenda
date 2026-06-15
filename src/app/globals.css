@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
+@theme {
+  --color-accent: #0E8A6B;
+  --color-accent-700: #0A6B53;
+  --color-accent-800: #085441;
+  --color-accent-200: #BFE2D6;
+  --color-accent-100: #DCEFE8;
+  --color-accent-50: #EEF7F3;
+  --color-ink: #15211C;
+  --color-text: #3A463F;
+  --color-muted: #6E7A73;
+  --color-faint: #9AA39D;
+  --color-line: #E7E4DC;
+  --color-line-soft: #F0EDE6;
+  --color-bg: #F6F4EE;
+  --color-card: #FFFFFF;
+  --color-stage: #26302B;
+  --color-amber: #C0801C;
+  --color-amber-bg: #FBF1DD;
+  --color-amber-ink: #7A5310;
+  --color-danger: #C5453B;
+  --color-danger-bg: #FAE6E4;
+  --color-danger-ink: #8E2A22;
+  --color-info: #2F6DB3;
+  --color-info-bg: #E5EEF8;
+
+  --font-display: var(--font-poppins), system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+}
+
+/* Aliases that match the prototype's CSS variable names — used in inline styles. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --accent: var(--color-accent);
+  --accent-700: var(--color-accent-700);
+  --accent-800: var(--color-accent-800);
+  --accent-200: var(--color-accent-200);
+  --accent-100: var(--color-accent-100);
+  --accent-050: var(--color-accent-50);
+  --ink: var(--color-ink);
+  --text: var(--color-text);
+  --muted: var(--color-muted);
+  --faint: var(--color-faint);
+  --line: var(--color-line);
+  --line-soft: var(--color-line-soft);
+  --bg: var(--color-bg);
+  --card: var(--color-card);
+  --stage: var(--color-stage);
+  --amber: var(--color-amber);
+  --amber-bg: var(--color-amber-bg);
+  --amber-ink: var(--color-amber-ink);
+  --danger: var(--color-danger);
+  --danger-bg: var(--color-danger-bg);
+  --danger-ink: var(--color-danger-ink);
+  --info: var(--color-info);
+  --info-bg: var(--color-info-bg);
+  --blue: var(--color-info);
+
+  --r-sm: 10px;
+  --r: 14px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  --sh-sm: 0 1px 2px rgba(21,33,28,.06), 0 1px 3px rgba(21,33,28,.05);
+  --sh: 0 2px 8px rgba(21,33,28,.06), 0 8px 24px rgba(21,33,28,.05);
+  --sh-lg: 0 12px 32px rgba(21,33,28,.10), 0 4px 10px rgba(21,33,28,.05);
+
+  --font: var(--font-jakarta), system-ui, sans-serif;
+  --font-display: var(--font-poppins), system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@keyframes fadeUp { from { transform: translateY(10px); } to { transform: translateY(0); } }
+@keyframes popIn { from { transform: translateY(6px) scale(.985); } to { transform: translateY(0) scale(1); } }
+@keyframes fadeIn { from { opacity: .001; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes dot { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { height: 100%; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--stage);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
 }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -.01em;
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(21,33,28,.16); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.no-sb::-webkit-scrollbar { width: 0; height: 0; }
+.no-sb { scrollbar-width: none; }
+
+.fade-up { animation: fadeUp .4s cubic-bezier(.2,.7,.3,1) both; }
+.pop-in { animation: popIn .32s cubic-bezier(.2,.8,.3,1) both; }
+.fade-in { animation: fadeIn .25s ease-out both; }
+.slide-up { animation: slideUp .35s cubic-bezier(.2,.7,.3,1) both; }
