@@ -300,7 +300,7 @@ export function LadoAOnboarding({
   const funnel = useStore((s) => s.funnel);
   const updateFunnel = useStore((s) => s.updateFunnel);
   const addFunnel = useStore((s) => s.addFunnel);
-  const updateProfessional = useStore((s) => s.updateProfessional);
+  const finishOnboarding = useStore((s) => s.finishOnboarding);
   const connectCalendar = useStore((s) => s.connectCalendar);
   const isNovo = mode === "novo";
 
@@ -397,7 +397,12 @@ export function LadoAOnboarding({
     };
     if (isNovo) addFunnel(payload);
     else updateFunnel(payload);
-    updateProfessional({ nome });
+    const waDigits = whats.replace(/\D/g, "");
+    finishOnboarding({
+      nome,
+      handleInstagram: handle,
+      ...(waDigits.length >= 10 && { whatsapp: waDigits.startsWith("55") ? waDigits : "55" + waDigits }),
+    });
     if (cal.done) connectCalendar();
   }
 

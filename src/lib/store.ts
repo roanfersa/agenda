@@ -23,6 +23,8 @@ import type {
   Toast,
 } from "./types";
 import type { BootstrapData } from "./data/bootstrap";
+import type { AdminData } from "./data/admin-bootstrap";
+import { resolveLgpdAction, advanceSetupAction } from "./actions/admin";
 import {
   saveFunnelAction,
   createFunnelAction,
@@ -36,6 +38,7 @@ import {
 import {
   updateProfessionalAction,
   setCalendarAction,
+  completeOnboardingAction,
 } from "./actions/professional";
 
 let _uid = 0;
@@ -156,6 +159,7 @@ type State = {
 
 type Actions = {
   hydrate: (data: BootstrapData) => void;
+  hydrateAdmin: (data: AdminData) => void;
   addLeadFromFunnel: (input: {
     nome: string;
     whatsapp: string;
@@ -184,6 +188,7 @@ type Actions = {
   deleteFunnel: (id: string) => void;
   updateLead: (id: string, patch: Partial<Lead>) => void;
   updateProfessional: (patch: Partial<Professional>) => void;
+  finishOnboarding: (patch: Partial<Professional>) => void;
   connectCalendar: (email?: string) => void;
   disconnectCalendar: () => void;
   markLeadRead: (id: string) => void;
@@ -232,6 +237,17 @@ export const useStore = create<State & Actions>()((set, get) => ({
       disponibilidade: data.disponibilidade,
       subscriptions: data.subscription ? [data.subscription] : [],
       onboardingDone: data.onboardingDone,
+    }),
+
+  hydrateAdmin: (data) =>
+    set({
+      otherPros: data.otherPros,
+      subscriptions: data.subscriptions,
+      setups: data.setups,
+      lgpdRequests: data.lgpdRequests,
+      consentLogs: data.consentLogs,
+      internalUsers: data.internalUsers,
+      auditLog: data.auditLog,
     }),
 
   // Uso interno (preview no app). O funil público persiste via /api/lead.
@@ -400,6 +416,11 @@ export const useStore = create<State & Actions>()((set, get) => ({
     persist(updateProfessionalAction(patch), get().toast);
   },
 
+  finishOnboarding: (patch) => {
+    set((s) => ({ professional: { ...s.professional, ...patch }, onboardingDone: true }));
+    persist(completeOnboardingAction(patch), get().toast);
+  },
+
   connectCalendar: (email) => {
     set((s) => ({
       professional: {
@@ -426,13 +447,17 @@ export const useStore = create<State & Actions>()((set, get) => ({
     persist(markLeadReadAction(id));
   },
 
-  resolveLgpd: (id) =>
+  resolveLgpd: (id) => {
     set((s) => ({
       lgpdRequests: s.lgpdRequests.map((r) => (r.id === id ? { ...r, status: "concluido" } : r)),
-    })),
+    }));
+    persist(resolveLgpdAction(id), get().toast);
+  },
 
-  advanceSetup: (id, status) =>
-    set((s) => ({ setups: s.setups.map((t) => (t.id === id ? { ...t, status } : t)) })),
+  advanceSetup: (id, status) => {
+    set((s) => ({ setups: s.setups.map((t) => (t.id === id ? { ...t, status } : t)) }));
+    persist(advanceSetupAction(id, status), get().toast);
+  },
 
   toast: (msg) => {
     const id = uid("t");

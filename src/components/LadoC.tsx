@@ -6,6 +6,7 @@ import { Icon, type IconName } from "./Icon";
 import { Avatar, Badge, Button, EmptyState, Field, SectionLabel } from "./ui";
 import { DeskCard, Logo, PageHead, Td, Th, ConfirmModal } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
+import { useAdminData } from "@/hooks/useAdminData";
 import type { OtherPro, Professional, Funnel } from "@/lib/types";
 
 const PLANO_LABEL = { entrada: "Entrada", pro: "Pro", setup: "Setup" } as const;
@@ -76,6 +77,7 @@ export function DeskShell({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  useAdminData();
   const nav: { id: AdminScreen; label: string; icon: IconName }[] = [
     { id: "overview", label: "Visão geral", icon: "grid" },
     { id: "profissionais", label: "Profissionais", icon: "users" },
