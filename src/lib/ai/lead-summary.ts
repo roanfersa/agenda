@@ -1,5 +1,5 @@
 import "server-only";
-import { AI_MODEL, getAnthropic, textOf } from "./client";
+import { AI_MODEL, getAnthropic, parseJson, textOf } from "./client";
 import type { Resposta } from "@/lib/types";
 
 export type LeadQualificacao = {
@@ -49,8 +49,7 @@ export async function summarizeLead(input: {
         },
       ],
     });
-    const raw = textOf(msg);
-    const parsed = JSON.parse(raw) as Partial<LeadQualificacao>;
+    const parsed = parseJson<Partial<LeadQualificacao>>(textOf(msg));
     return {
       resumo: parsed.resumo || fallback(input.respostas).resumo,
       score: typeof parsed.score === "number" ? parsed.score : 50,

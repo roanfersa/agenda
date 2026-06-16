@@ -24,3 +24,21 @@ export function textOf(msg: Anthropic.Message): string {
     .join("\n")
     .trim();
 }
+
+/**
+ * Faz parse de JSON mesmo quando o modelo embrulha em ```json ... ``` ou
+ * adiciona texto antes/depois. Lança se não achar um objeto válido.
+ */
+export function parseJson<T>(raw: string): T {
+  const cleaned = raw.replace(/```json\s*|\s*```/gi, "").trim();
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1)) as T;
+    }
+    throw new Error("Resposta da IA não é JSON válido.");
+  }
+}

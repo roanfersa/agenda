@@ -1,5 +1,5 @@
 import "server-only";
-import { getAnthropic, textOf } from "./client";
+import { getAnthropic, parseJson, textOf } from "./client";
 import type { Objetivo, Question } from "@/lib/types";
 
 export type GeneratedFunnel = {
@@ -46,11 +46,11 @@ export async function generateFunnel(input: {
     ],
   });
 
-  const parsed = JSON.parse(textOf(msg)) as {
+  const parsed = parseJson<{
     mensagemBoasVindas?: string;
     perguntas?: Array<Omit<Question, "id">>;
     consentimentoTexto?: string;
-  };
+  }>(textOf(msg));
 
   return {
     mensagemBoasVindas: parsed.mensagemBoasVindas ?? "",
