@@ -12,9 +12,13 @@ mesmas variáveis no painel da Vercel.
 ## 2. Supabase
 
 1. Crie um projeto em https://app.supabase.com.
-2. Em **SQL Editor**, rode o conteúdo de `supabase/migrations/0001_initial_schema.sql`.
-   Isso cria todas as tabelas, RLS, o trigger que cria `professionals` no signup
-   e a função `is_internal()`.
+2. Em **SQL Editor**, rode as migrations em ordem: `supabase/migrations/0001_initial_schema.sql`
+   (tabelas, RLS, trigger de signup, `is_internal()`), `0002_feature_flags.sql`
+   (feature flags), `0003_biolink.sql` (tema/blocos/produtos/preview do bio-link)
+   e `0004_storage_branding.sql` (policies do Storage).
+   Crie também um bucket de Storage **público** chamado `branding` (logos/avatars/fundos).
+   Obs.: o host direto do banco é IPv6-only; para aplicar via `psql`/CI use o
+   **pooler** (`aws-1-sa-east-1.pooler.supabase.com`, usuário `postgres.<ref>`).
 3. Em **Project Settings → API**, copie `Project URL`, `anon key` e
    `service_role key` para o `.env.local`.
 4. **Auth → Providers**: deixe e-mail/senha habilitado. Para o "Entrar com
