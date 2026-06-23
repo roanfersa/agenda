@@ -57,6 +57,15 @@ export type Produto = {
   preco?: string;
 };
 
+/** Material de referência reutilizável (arquivo, nota de texto ou link). */
+export type Material = {
+  id: string;
+  tipo: "arquivo" | "texto" | "link";
+  titulo: string;
+  descricao: string;
+  url?: string;
+};
+
 export type Funnel = {
   id: string;
   professionalId: string;
@@ -109,6 +118,9 @@ export type Professional = {
   consentimentoTextoPadrao: string;
   /** Overrides de feature flags definidos pelo admin (default vem do plano). */
   featureFlags: Record<string, boolean>;
+  /** Biblioteca de contexto reutilizável em todos os links/funis. */
+  produtos: Produto[];
+  materiais: Material[];
   criadoEm: string;
 };
 

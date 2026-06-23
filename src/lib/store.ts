@@ -114,6 +114,8 @@ const emptyProfessional: Professional = {
   avisos: { email: true, push: true },
   consentimentoTextoPadrao: "",
   featureFlags: {},
+  produtos: [],
+  materiais: [],
   criadoEm: "",
 };
 

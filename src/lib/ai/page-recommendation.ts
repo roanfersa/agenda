@@ -1,6 +1,6 @@
 import "server-only";
 import { getAnthropic, parseJson, textOf } from "./client";
-import type { FlowPreset, Produto } from "@/lib/types";
+import type { FlowPreset, Material, Produto } from "@/lib/types";
 
 const SONNET = "claude-sonnet-4-6";
 
@@ -32,6 +32,7 @@ export async function recommendPage(input: {
   especialidade: string;
   objetivo: string;
   produtos: Produto[];
+  materiais?: Material[];
 }): Promise<PageRecommendation> {
   const client = getAnthropic();
   if (!client) throw new Error("IA não configurada (defina ANTHROPIC_API_KEY).");
@@ -40,6 +41,10 @@ export async function recommendPage(input: {
     input.produtos.length > 0
       ? input.produtos.map((p) => `- ${p.nome}: ${p.descricao}${p.preco ? ` (${p.preco})` : ""}${p.link ? ` [${p.link}]` : ""}`).join("\n")
       : "(nenhum produto informado)";
+  const materiais =
+    input.materiais && input.materiais.length > 0
+      ? "\nMateriais de referência:\n" + input.materiais.map((m) => `- ${m.titulo}: ${m.descricao}`).join("\n")
+      : "";
 
   const msg = await client.messages.create({
     model: SONNET,
@@ -56,7 +61,7 @@ export async function recommendPage(input: {
         role: "user",
         content:
           `Profissional: ${input.nome} — ${input.especialidade}. Objetivo: ${input.objetivo}.\n` +
-          `Produtos/ofertas:\n${produtos}`,
+          `Produtos/ofertas:\n${produtos}${materiais}`,
       },
     ],
   });

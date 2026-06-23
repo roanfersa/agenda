@@ -20,6 +20,7 @@ import type {
   FunnelTheme,
   FunnelBlock,
   Produto,
+  Material,
 } from "../types";
 
 type Jsonb = unknown;
@@ -38,6 +39,8 @@ export type ProfessionalRow = {
   avisos: { email: boolean; push: boolean };
   consentimento_texto_padrao: string;
   feature_flags: Record<string, boolean>;
+  produtos: Produto[];
+  materiais: Material[];
   stripe_customer_id: string | null;
   onboarding_done: boolean;
   criado_em: string;

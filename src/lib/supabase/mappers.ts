@@ -38,6 +38,8 @@ export const toProfessional = (r: ProfessionalRow): Professional => ({
   avisos: r.avisos,
   consentimentoTextoPadrao: r.consentimento_texto_padrao,
   featureFlags: r.feature_flags ?? {},
+  produtos: r.produtos ?? [],
+  materiais: r.materiais ?? [],
   criadoEm: r.criado_em,
 });
 
@@ -57,6 +59,8 @@ export const fromProfessional = (
   ...(p.consentimentoTextoPadrao !== undefined && {
     consentimento_texto_padrao: p.consentimentoTextoPadrao,
   }),
+  ...(p.produtos !== undefined && { produtos: p.produtos }),
+  ...(p.materiais !== undefined && { materiais: p.materiais }),
 });
 
 export const toFunnel = (r: FunnelRow): Funnel => ({

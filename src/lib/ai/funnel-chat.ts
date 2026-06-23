@@ -1,6 +1,6 @@
 import "server-only";
 import { AI_MODEL, getAnthropic, parseJson, textOf } from "./client";
-import type { Produto } from "@/lib/types";
+import type { Material, Produto } from "@/lib/types";
 
 export type ChatTurn = { role: "bot" | "user"; text: string };
 
@@ -39,6 +39,7 @@ export async function nextChatTurn(input: {
   objetivo: string;
   permiteAgendar: boolean;
   produtos: Produto[];
+  materiais?: Material[];
   perguntasBase: string[];
   history: ChatTurn[];
 }): Promise<ChatReply> {
@@ -51,6 +52,10 @@ export async function nextChatTurn(input: {
           .map((p) => `- ${p.nome}: ${p.descricao}${p.preco ? ` (${p.preco})` : ""}${p.link ? ` [link: ${p.link}]` : ""}`)
           .join("\n")
       : "(nenhum produto cadastrado)";
+  const materiais =
+    input.materiais && input.materiais.length > 0
+      ? "\nMATERIAIS DE REFERÊNCIA:\n" + input.materiais.map((m) => `- ${m.titulo}: ${m.descricao}`).join("\n")
+      : "";
 
   const historico = input.history.map((t) => `${t.role === "bot" ? "Bot" : "Pessoa"}: ${t.text}`).join("\n") || "(início)";
 
@@ -64,7 +69,7 @@ export async function nextChatTurn(input: {
         `Você conversa com um visitante para qualificá-lo com poucas perguntas (1 por vez) e, quando tiver contexto suficiente (2-3 trocas), recomendar o melhor próximo passo. ` +
         (input.permiteAgendar ? "Agendar no próprio chat é permitido. " : "NÃO ofereça agendamento. ") +
         "Use os produtos abaixo para recomendar um link quando fizer sentido.\n\n" +
-        `PRODUTOS:\n${produtos}\n\n` +
+        `PRODUTOS:\n${produtos}${materiais}\n\n` +
         "Responda SEMPRE em JSON válido, sem texto fora dele: " +
         '{"mensagem":string (pt-BR, informal, curto),"opcoes"?:string[] (2-4 respostas rápidas, opcional),"fase":"perguntando"|"recomendar",' +
         '"recomendacao"?:{"tipo":"agendar"|"link"|"whatsapp","label":string,"url"?:string,"motivo"?:string}}. ' +

@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { nextChatTurn, type ChatTurn } from "@/lib/ai/funnel-chat";
 import { hasFeature } from "@/lib/features";
 import { getPreset } from "@/lib/flow-presets";
-import type { FlowPreset, Produto, Question } from "@/lib/types";
+import type { FlowPreset, Material, Produto, Question } from "@/lib/types";
 
 /**
  * Turno do funil conversacional (público). Carrega o funil por slug via service
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const { data: prof } = await db
     .from("professionals")
-    .select("nome, especialidade, plano, feature_flags, whatsapp")
+    .select("nome, especialidade, plano, feature_flags, whatsapp, produtos, materiais")
     .eq("id", funnel.professional_id)
     .single();
   if (!prof) return NextResponse.json({ error: "indisponível" }, { status: 404 });
@@ -42,7 +42,8 @@ export async function POST(request: Request) {
     especialidade: prof.especialidade ?? "",
     objetivo: funnel.objetivo,
     permiteAgendar: preset.recomendacao === "agendar" || funnel.objetivo === "agendar",
-    produtos: (funnel.produtos as Produto[]) ?? [],
+    produtos: (prof.produtos as Produto[]) ?? (funnel.produtos as Produto[]) ?? [],
+    materiais: (prof.materiais as Material[]) ?? [],
     perguntasBase: perguntas.map((p) => p.texto),
     history: history ?? [],
   });

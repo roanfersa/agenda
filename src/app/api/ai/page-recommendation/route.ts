@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { recommendPage } from "@/lib/ai/page-recommendation";
 import { hasFeature } from "@/lib/features";
-import type { Objetivo, Produto } from "@/lib/types";
+import type { Objetivo } from "@/lib/types";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -11,14 +11,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
-  const { objetivo, produtos } = (await request.json().catch(() => ({}))) as {
-    objetivo?: Objetivo;
-    produtos?: Produto[];
-  };
+  const { objetivo } = (await request.json().catch(() => ({}))) as { objetivo?: Objetivo };
 
   const { data: prof } = await supabase
     .from("professionals")
-    .select("nome, especialidade, plano, feature_flags")
+    .select("nome, especialidade, plano, feature_flags, produtos, materiais")
     .eq("id", user.id)
     .single();
 
@@ -31,7 +28,8 @@ export async function POST(request: Request) {
       nome: prof.nome ?? "",
       especialidade: prof.especialidade ?? "",
       objetivo: objetivo ?? "qualificar",
-      produtos: produtos ?? [],
+      produtos: prof.produtos ?? [],
+      materiais: prof.materiais ?? [],
     });
     return NextResponse.json(result);
   } catch (e) {

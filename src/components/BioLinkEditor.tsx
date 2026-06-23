@@ -9,12 +9,13 @@ import { AiFunnelChat } from "./AiFunnelChat";
 import { useStore, uuid } from "@/lib/store";
 import { hasFeature } from "@/lib/features";
 import { FLOW_PRESETS, presetQuestions } from "@/lib/flow-presets";
-import { uploadBranding } from "@/lib/upload";
+import { uploadBranding, uploadFile } from "@/lib/upload";
 import {
   DEFAULT_THEME,
   type FlowPreset,
   type FunnelBlock,
   type FunnelTheme,
+  type Material,
   type Produto,
 } from "@/lib/types";
 
@@ -26,6 +27,7 @@ export function BioLinkEditor() {
   const funnel = useStore((s) => s.funnel);
   const professional = useStore((s) => s.professional);
   const updateFunnel = useStore((s) => s.updateFunnel);
+  const updateProfessional = useStore((s) => s.updateProfessional);
   const toast = useStore((s) => s.toast);
 
   const podeBranding = hasFeature(professional, "branding");
@@ -36,20 +38,25 @@ export function BioLinkEditor() {
   const [tab, setTab] = React.useState<Tab>("identidade");
   const [theme, setTheme] = React.useState<FunnelTheme>({ ...DEFAULT_THEME, ...(funnel.theme || {}) });
   const [blocks, setBlocks] = React.useState<FunnelBlock[]>(funnel.blocks || []);
-  const [produtos, setProdutos] = React.useState<Produto[]>(funnel.produtos || []);
+  // Biblioteca de contexto: nível do profissional (reusada por todos os links).
+  const [produtos, setProdutos] = React.useState<Produto[]>(professional.produtos || []);
+  const [materiais, setMateriais] = React.useState<Material[]>(professional.materiais || []);
   const [flowPreset, setFlowPreset] = React.useState<FlowPreset>(funnel.flowPreset || "bio_quiz");
   const [gerando, setGerando] = React.useState(false);
   const [uploading, setUploading] = React.useState<string | null>(null);
 
   // Funil "ao vivo" pra prévia (mescla edições locais).
-  const previewFunnel = { ...funnel, theme, blocks, produtos, flowPreset };
+  const previewFunnel = { ...funnel, theme, blocks, flowPreset };
 
+  const salvarBiblioteca = () => updateProfessional({ produtos, materiais });
   const salvar = () => {
-    updateFunnel({ theme, blocks, produtos, flowPreset });
+    updateFunnel({ theme, blocks, flowPreset });
+    salvarBiblioteca();
     toast("Alterações salvas ✓");
   };
   const publicar = () => {
-    updateFunnel({ theme, blocks, produtos, flowPreset, status: "publicado" });
+    updateFunnel({ theme, blocks, flowPreset, status: "publicado" });
+    salvarBiblioteca();
     toast("Página publicada ✓");
   };
   const copiarRascunho = () => {
@@ -76,11 +83,13 @@ export function BioLinkEditor() {
   const gerarComIA = async () => {
     if (gerando) return;
     setGerando(true);
+    // Garante que a biblioteca esteja salva antes da IA lê-la no servidor.
+    salvarBiblioteca();
     try {
       const res = await fetch("/api/ai/page-recommendation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ objetivo: funnel.objetivo, produtos }),
+        body: JSON.stringify({ objetivo: funnel.objetivo }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -140,7 +149,7 @@ export function BioLinkEditor() {
     ["identidade", "Identidade"],
     ["blocos", "Blocos"],
     ["funil", "Funil"],
-    ["produtos", "Produtos"],
+    ["produtos", "Biblioteca"],
     ["previa", "Prévia"],
   ];
 
@@ -286,7 +295,10 @@ export function BioLinkEditor() {
 
           {tab === "produtos" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <p style={{ fontSize: 13, color: "var(--muted)" }}>Cadastre seus produtos/ofertas. A IA usa isso pra recomendar o próximo passo no chat e gerar a página.</p>
+              <div style={{ background: "var(--accent-050)", borderRadius: 10, padding: "10px 12px", fontSize: 12.5, color: "var(--accent-800)", fontWeight: 600 }}>
+                📚 Esta biblioteca é da sua conta — fica salva e é reutilizada em todos os seus links e pela IA.
+              </div>
+              <SectionLabel>Produtos & ofertas</SectionLabel>
               {produtos.map((p, i) => (
                 <Card key={i}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -301,6 +313,49 @@ export function BioLinkEditor() {
                 </Card>
               ))}
               <Button size="sm" variant="outline" icon="plus" onClick={() => setProdutos((ps) => [...ps, { nome: "", descricao: "" }])}>Adicionar produto</Button>
+
+              <SectionLabel style={{ marginTop: 10 }}>Materiais de referência</SectionLabel>
+              <p style={{ fontSize: 12.5, color: "var(--muted)" }}>Arquivos (PDF, tabela de preços…), notas ou links que descrevem seu contexto. A IA usa pra entender seu trabalho.</p>
+              {materiais.map((m, i) => (
+                <Card key={m.id}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, textTransform: "uppercase", color: "var(--muted)" }}>{m.tipo}</span>
+                    <div style={{ flex: 1 }} />
+                    <button onClick={() => setMateriais((ms) => ms.filter((x) => x.id !== m.id))} style={{ color: "var(--danger)" }}><Icon name="trash" size={16} /></button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <Field value={m.titulo} onChange={(v) => setMateriais((ms) => ms.map((x) => x.id === m.id ? { ...x, titulo: v } : x))} placeholder="Título" />
+                    <Field as="textarea" value={m.descricao} onChange={(v) => setMateriais((ms) => ms.map((x) => x.id === m.id ? { ...x, descricao: v } : x))} placeholder="Descrição / contexto pra IA" />
+                    {m.tipo === "link" && (
+                      <Field value={m.url || ""} onChange={(v) => setMateriais((ms) => ms.map((x) => x.id === m.id ? { ...x, url: v } : x))} placeholder="URL" />
+                    )}
+                    {m.tipo === "arquivo" && (
+                      m.url ? (
+                        <a href={m.url} target="_blank" rel="noopener" style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700 }}>Ver arquivo enviado</a>
+                      ) : (
+                        <label style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, cursor: "pointer" }}>
+                          {uploading === m.id ? "Enviando…" : "Enviar arquivo"}
+                          <input type="file" hidden accept=".pdf,.doc,.docx,.txt,image/*" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploading(m.id);
+                            try {
+                              const url = await uploadFile("contexto", professional.id, file);
+                              setMateriais((ms) => ms.map((x) => x.id === m.id ? { ...x, url, titulo: x.titulo || file.name } : x));
+                            } catch { toast("Falha no upload"); } finally { setUploading(null); }
+                          }} />
+                        </label>
+                      )
+                    )}
+                  </div>
+                </Card>
+              ))}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {(["arquivo", "texto", "link"] as const).map((t) => (
+                  <Button key={t} size="sm" variant="outline" icon="plus" onClick={() => setMateriais((ms) => [...ms, { id: uuid(), tipo: t, titulo: "", descricao: "" }])}>{t}</Button>
+                ))}
+              </div>
+              <Button size="sm" onClick={() => { salvarBiblioteca(); toast("Biblioteca salva ✓"); }}>Salvar biblioteca</Button>
             </div>
           )}
 
