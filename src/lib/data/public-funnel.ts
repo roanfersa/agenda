@@ -1,12 +1,15 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toDisponibilidade, toFunnel, toProfessional } from "@/lib/supabase/mappers";
+import { hasFeature } from "@/lib/features";
 import type { Disponibilidade, Funnel, Professional } from "@/lib/types";
 
 export type PublicFunnel = {
   funnel: Funnel;
   professional: Professional;
   disponibilidade: Disponibilidade[];
+  /** Dono tem a flag chat_ia → usa o funil conversacional com IA. */
+  aiEnabled: boolean;
 };
 
 /**
@@ -51,9 +54,11 @@ async function hydrate(
   ]);
   if (!prof) return null;
 
+  const professional = toProfessional(prof);
   return {
     funnel: toFunnel(funnel),
-    professional: toProfessional(prof),
+    professional,
     disponibilidade: (dispo ?? []).map(toDisponibilidade),
+    aiEnabled: hasFeature(professional, "chat_ia"),
   };
 }

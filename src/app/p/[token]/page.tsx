@@ -36,6 +36,7 @@ export default async function PreviewFunnelPage({
         funnel={data.funnel}
         professional={data.professional}
         disponibilidade={data.disponibilidade}
+        aiEnabled={data.aiEnabled}
         preview
       />
     </>

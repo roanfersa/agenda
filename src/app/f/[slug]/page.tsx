@@ -27,6 +27,7 @@ export default async function PublicFunnelPage({
       professional={data.professional}
       disponibilidade={data.disponibilidade}
       objOverride={objOverride}
+      aiEnabled={data.aiEnabled}
     />
   );
 }

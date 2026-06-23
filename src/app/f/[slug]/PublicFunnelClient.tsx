@@ -1,6 +1,7 @@
 "use client";
 
 import { LadoB, type PublicLeadInput } from "@/components/LadoB";
+import { AiFunnelChat } from "@/components/AiFunnelChat";
 import { ToastHost } from "@/components/ui";
 import type { Disponibilidade, Funnel, Objetivo, Professional } from "@/lib/types";
 
@@ -10,12 +11,14 @@ export function PublicFunnelClient({
   disponibilidade,
   objOverride,
   preview = false,
+  aiEnabled = false,
 }: {
   funnel: Funnel;
   professional: Professional;
   disponibilidade: Disponibilidade[];
   objOverride?: Objetivo;
   preview?: boolean;
+  aiEnabled?: boolean;
 }) {
   const onSubmitLead = async (input: PublicLeadInput) => {
     if (preview) return; // rascunho: não cria lead real
@@ -40,14 +43,24 @@ export function PublicFunnelClient({
 
   return (
     <>
-      <LadoB
-        funnelOverride={funnel}
-        professionalOverride={professional}
-        disponibilidadeOverride={disponibilidade}
-        objOverride={objOverride}
-        onSubmitLead={onSubmitLead}
-        key={`${funnel.slug}-${objOverride || "default"}`}
-      />
+      {aiEnabled ? (
+        <AiFunnelChat
+          funnel={funnel}
+          professional={professional}
+          disponibilidade={disponibilidade}
+          onSubmitLead={onSubmitLead}
+          preview={preview}
+        />
+      ) : (
+        <LadoB
+          funnelOverride={funnel}
+          professionalOverride={professional}
+          disponibilidadeOverride={disponibilidade}
+          objOverride={objOverride}
+          onSubmitLead={onSubmitLead}
+          key={`${funnel.slug}-${objOverride || "default"}`}
+        />
+      )}
       <ToastHost />
     </>
   );
