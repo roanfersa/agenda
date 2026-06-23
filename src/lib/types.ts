@@ -26,6 +26,37 @@ export type ContextoItem = {
   label: string;
 };
 
+export type FlowPreset = "bio_quiz" | "agendamento" | "captura" | "qualificar";
+
+export type SocialLink = { rede: string; url: string };
+
+export type FunnelTheme = {
+  brandColor: string;
+  fontFamily: string;
+  logoUrl: string | null;
+  avatarUrl: string | null;
+  bgColor: string;
+  bgImageUrl: string | null;
+  headline: string;
+  subheadline: string;
+  socialLinks: SocialLink[];
+};
+
+export type FunnelBlock =
+  | { id: string; tipo: "funil"; titulo: string; cta: string }
+  | { id: string; tipo: "link"; titulo: string; url: string; emoji?: string }
+  | { id: string; tipo: "oferta"; titulo: string; descricao?: string; preco?: string; url: string; emoji?: string }
+  | { id: string; tipo: "recurso"; titulo: string; descricao?: string; url: string; emoji?: string }
+  | { id: string; tipo: "social"; links: SocialLink[] }
+  | { id: string; tipo: "texto"; texto: string };
+
+export type Produto = {
+  nome: string;
+  descricao: string;
+  link?: string;
+  preco?: string;
+};
+
 export type Funnel = {
   id: string;
   professionalId: string;
@@ -42,7 +73,25 @@ export type Funnel = {
   perguntas: Question[];
   consentimentoTexto: string;
   status: FunnelStatus;
+  // Bio-link SaaS:
+  flowPreset: FlowPreset;
+  theme: FunnelTheme;
+  blocks: FunnelBlock[];
+  produtos: Produto[];
+  previewToken: string;
   criadoEm: string;
+};
+
+export const DEFAULT_THEME: FunnelTheme = {
+  brandColor: "#0E8A6B",
+  fontFamily: "Plus Jakarta Sans",
+  logoUrl: null,
+  avatarUrl: null,
+  bgColor: "#F6F4EE",
+  bgImageUrl: null,
+  headline: "",
+  subheadline: "",
+  socialLinks: [],
 };
 
 export type Professional = {

@@ -9,13 +9,16 @@ export function PublicFunnelClient({
   professional,
   disponibilidade,
   objOverride,
+  preview = false,
 }: {
   funnel: Funnel;
   professional: Professional;
   disponibilidade: Disponibilidade[];
   objOverride?: Objetivo;
+  preview?: boolean;
 }) {
   const onSubmitLead = async (input: PublicLeadInput) => {
+    if (preview) return; // rascunho: não cria lead real
     try {
       await fetch("/api/lead", {
         method: "POST",

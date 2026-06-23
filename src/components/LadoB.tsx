@@ -4,7 +4,7 @@ import * as React from "react";
 import { Icon } from "./Icon";
 import { Avatar, Button, Field, TypingDots } from "./ui";
 import { fmtWhats, OBJ, useStore, waLink } from "@/lib/store";
-import type { Disponibilidade, Funnel, Objetivo, Professional, Resposta } from "@/lib/types";
+import { DEFAULT_THEME, type Disponibilidade, type Funnel, type FunnelBlock, type Objetivo, type Professional, type Resposta } from "@/lib/types";
 
 export type PublicLeadInput = {
   nome: string;
@@ -423,6 +423,82 @@ function PrivacySheet({
   );
 }
 
+/* ---- Blocos estilo Linktree (renderizados no fim do fluxo) -------------- */
+function BlocksSection({ blocks }: { blocks: FunnelBlock[] }) {
+  const card = (children: React.ReactNode, href?: string, key?: string) => {
+    const inner = (
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid rgba(21,33,28,.08)",
+          borderRadius: 14,
+          padding: "13px 15px",
+          boxShadow: "0 1px 3px rgba(21,33,28,.06)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        {children}
+      </div>
+    );
+    return href ? (
+      <a key={key} href={href} target="_blank" rel="noopener" style={{ textDecoration: "none", color: "inherit" }}>
+        {inner}
+      </a>
+    ) : (
+      <div key={key}>{inner}</div>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6, animation: "fadeUp .3s both" }}>
+      {blocks.map((b) => {
+        if (b.tipo === "social") {
+          return (
+            <div key={b.id} style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              {b.links.map((l, i) => (
+                <a key={i} href={l.url} target="_blank" rel="noopener"
+                   style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", textDecoration: "none" }}>
+                  {l.rede}
+                </a>
+              ))}
+            </div>
+          );
+        }
+        if (b.tipo === "texto") {
+          return (
+            <p key={b.id} style={{ fontSize: 13.5, color: "#3A463F", textAlign: "center", lineHeight: 1.5, margin: "2px 0" }}>
+              {b.texto}
+            </p>
+          );
+        }
+        // link | oferta | recurso | funil
+        const titulo = "titulo" in b ? b.titulo : "";
+        const descricao = "descricao" in b ? b.descricao : undefined;
+        const preco = "preco" in b ? b.preco : undefined;
+        const emoji = "emoji" in b ? b.emoji : undefined;
+        const url = "url" in b ? b.url : undefined;
+        return card(
+          <>
+            {emoji && <span style={{ fontSize: 22 }}>{emoji}</span>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "#15211C" }}>{titulo}</div>
+              {descricao && <div style={{ fontSize: 12.5, color: "#6E7A73", marginTop: 1 }}>{descricao}</div>}
+            </div>
+            {preco && (
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap" }}>{preco}</span>
+            )}
+            <Icon name="arrowRight" size={16} />
+          </>,
+          url,
+          b.id,
+        );
+      })}
+    </div>
+  );
+}
+
 export function LadoB({
   objOverride,
   funnelOverride,
@@ -444,6 +520,8 @@ export function LadoB({
   const professional = professionalOverride || storeProfessional;
   const disponibilidade = disponibilidadeOverride || storeDispo;
   const funnel = funnelOverride || storeFunnel;
+  const theme = { ...DEFAULT_THEME, ...(funnel.theme || {}) };
+  const blocks: FunnelBlock[] = funnel.blocks || [];
   const objetivo: Objetivo = objOverride || funnel.objetivo || "agendar";
   const obj = OBJ(objetivo);
 
@@ -881,10 +959,13 @@ export function LadoB({
       style={{
         position: "relative",
         minHeight: "100dvh",
-        background: "#EBE7DF",
+        background: theme.bgImageUrl ? `url(${theme.bgImageUrl}) center/cover` : theme.bgColor,
         display: "flex",
         flexDirection: "column",
-      }}
+        fontFamily: `"${theme.fontFamily}", var(--font-jakarta), sans-serif`,
+        // Recolore tudo que usa var(--accent) com a cor da marca do funil.
+        ["--accent" as string]: theme.brandColor,
+      } as React.CSSProperties}
     >
       <div
         style={{
@@ -940,12 +1021,13 @@ export function LadoB({
               </div>
             </div>
           )}
+          {blocks.length > 0 && <BlocksSection blocks={blocks} />}
         </div>
         {composer && (
           <div
             style={{
               padding: "6px 14px calc(env(safe-area-inset-bottom, 0px) + 18px)",
-              background: "#EBE7DF",
+              background: theme.bgColor,
             }}
           >
             {reservaSeg !== null && intent === "agendar" && ["contact", "consent"].includes(stage) && (

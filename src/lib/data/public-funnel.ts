@@ -23,6 +23,28 @@ export async function getPublicFunnel(slug: string): Promise<PublicFunnel | null
     .single();
   if (!funnel) return null;
 
+  return hydrate(funnel);
+}
+
+/**
+ * Carrega um funil por preview_token (qualquer status) para o dono revisar antes
+ * de publicar. O token funciona como segredo de compartilhamento.
+ */
+export async function getFunnelByPreviewToken(token: string): Promise<PublicFunnel | null> {
+  const db = createAdminClient();
+  const { data: funnel } = await db
+    .from("funnels")
+    .select("*")
+    .eq("preview_token", token)
+    .single();
+  if (!funnel) return null;
+  return hydrate(funnel);
+}
+
+async function hydrate(
+  funnel: Parameters<typeof toFunnel>[0],
+): Promise<PublicFunnel | null> {
+  const db = createAdminClient();
   const [{ data: prof }, { data: dispo }] = await Promise.all([
     db.from("professionals").select("*").eq("id", funnel.professional_id).single(),
     db.from("availability").select("*").eq("professional_id", funnel.professional_id),

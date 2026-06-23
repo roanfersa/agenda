@@ -16,6 +16,10 @@ import type {
   Resposta,
   Question,
   ContextoItem,
+  FlowPreset,
+  FunnelTheme,
+  FunnelBlock,
+  Produto,
 } from "../types";
 
 type Jsonb = unknown;
@@ -55,6 +59,11 @@ export type FunnelRow = {
   perguntas: Question[];
   consentimento_texto: string;
   status: FunnelStatus;
+  flow_preset: FlowPreset;
+  theme: Partial<FunnelTheme>;
+  blocks: FunnelBlock[];
+  produtos: Produto[];
+  preview_token: string;
   criado_em: string;
 };
 

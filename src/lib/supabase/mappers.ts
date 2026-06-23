@@ -2,15 +2,16 @@
  * Conversão entre as linhas do banco (snake_case) e os tipos da app
  * (camelCase em src/lib/types.ts). Mantém a UI inalterada.
  */
-import type {
-  Appointment,
-  Automation,
-  Disponibilidade,
-  Funnel,
-  Lead,
-  Notification,
-  Professional,
-  Subscription,
+import {
+  DEFAULT_THEME,
+  type Appointment,
+  type Automation,
+  type Disponibilidade,
+  type Funnel,
+  type Lead,
+  type Notification,
+  type Professional,
+  type Subscription,
 } from "../types";
 import type {
   AppointmentRow,
@@ -74,6 +75,11 @@ export const toFunnel = (r: FunnelRow): Funnel => ({
   perguntas: r.perguntas,
   consentimentoTexto: r.consentimento_texto,
   status: r.status,
+  flowPreset: r.flow_preset ?? "bio_quiz",
+  theme: { ...DEFAULT_THEME, ...(r.theme ?? {}) },
+  blocks: r.blocks ?? [],
+  produtos: r.produtos ?? [],
+  previewToken: r.preview_token,
   criadoEm: r.criado_em,
 });
 
@@ -95,6 +101,10 @@ export const fromFunnel = (f: Partial<Funnel>): Partial<FunnelRow> => ({
     consentimento_texto: f.consentimentoTexto,
   }),
   ...(f.status !== undefined && { status: f.status }),
+  ...(f.flowPreset !== undefined && { flow_preset: f.flowPreset }),
+  ...(f.theme !== undefined && { theme: f.theme }),
+  ...(f.blocks !== undefined && { blocks: f.blocks }),
+  ...(f.produtos !== undefined && { produtos: f.produtos }),
 });
 
 export const toLead = (r: LeadRow): Lead => ({

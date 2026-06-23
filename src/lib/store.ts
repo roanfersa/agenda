@@ -22,6 +22,7 @@ import type {
   Subscription,
   Toast,
 } from "./types";
+import { DEFAULT_THEME } from "./types";
 import type { BootstrapData } from "./data/bootstrap";
 import type { AdminData } from "./data/admin-bootstrap";
 import { resolveLgpdAction, advanceSetupAction } from "./actions/admin";
@@ -132,6 +133,11 @@ const emptyFunnel: Funnel = {
   perguntas: [],
   consentimentoTexto: "",
   status: "rascunho",
+  flowPreset: "bio_quiz",
+  theme: DEFAULT_THEME,
+  blocks: [],
+  produtos: [],
+  previewToken: "",
   criadoEm: "",
 };
 
@@ -387,6 +393,11 @@ export const useStore = create<State & Actions>()((set, get) => ({
       mensagemBoasVindas: "",
       perguntas: [],
       consentimentoTexto: "",
+      flowPreset: "bio_quiz",
+      theme: DEFAULT_THEME,
+      blocks: [],
+      produtos: [],
+      previewToken: uuid(),
       ...f,
     } as Funnel;
     set((s) => ({ funnels: [...s.funnels, funnel], funnel, activeFunnelId: funnel.id }));
