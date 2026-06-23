@@ -11,6 +11,7 @@ import {
 } from "./shared";
 import { FunnelPreview } from "./FunnelPreview";
 import { OBJETIVOS, useStore } from "@/lib/store";
+import { hasFeature } from "@/lib/features";
 import type { Objetivo } from "@/lib/types";
 
 export function FunilEditor() {
@@ -141,11 +142,13 @@ export function FunilEditor() {
           })}
         </div>
       </div>
-      <div style={{ display: "flex" }}>
-        <Button variant="outline" size="sm" icon="bolt" onClick={gerarComIA} disabled={gerando}>
-          {gerando ? "Gerando…" : "Gerar funil com IA"}
-        </Button>
-      </div>
+      {hasFeature(professional, "gerar_ia") && (
+        <div style={{ display: "flex" }}>
+          <Button variant="outline" size="sm" icon="bolt" onClick={gerarComIA} disabled={gerando}>
+            {gerando ? "Gerando…" : "Gerar funil com IA"}
+          </Button>
+        </div>
+      )}
       <div>
         <SectionLabel style={{ marginBottom: 8 }}>Mensagem de boas-vindas</SectionLabel>
         <EditableBlock value={welcome} onChange={setWelcome} multiline />

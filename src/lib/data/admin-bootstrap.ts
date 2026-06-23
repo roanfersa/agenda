@@ -20,6 +20,8 @@ export type AdminData = {
   consentLogs: ConsentLog[];
   internalUsers: InternalUser[];
   auditLog: AuditEntry[];
+  /** Overrides de feature flags por profissional (proId → flags). */
+  proFlags: Record<string, Record<string, boolean>>;
 };
 
 const subToProStatus = (s?: string): ProStatus =>
@@ -40,7 +42,7 @@ export async function getAdminBootstrap(): Promise<AdminData | null> {
 
   const db = createAdminClient();
   const [pros, subs, leads, setups, lgpd, consent, team, audit] = await Promise.all([
-    db.from("professionals").select("id, nome, handle_instagram, especialidade, plano, google_calendar, criado_em"),
+    db.from("professionals").select("id, nome, handle_instagram, especialidade, plano, google_calendar, feature_flags, criado_em"),
     db.from("subscriptions").select("*"),
     db.from("leads").select("professional_id"),
     db.from("setup_tasks").select("*"),
@@ -51,6 +53,8 @@ export async function getAdminBootstrap(): Promise<AdminData | null> {
   ]);
 
   const nomePorPro = new Map((pros.data ?? []).map((p) => [p.id, p.nome]));
+  const proFlags: Record<string, Record<string, boolean>> = {};
+  for (const p of pros.data ?? []) proFlags[p.id] = p.feature_flags ?? {};
   const subPorPro = new Map((subs.data ?? []).map((s) => [s.professional_id, s]));
   const leadsPorPro = new Map<string, number>();
   for (const l of leads.data ?? [])
@@ -125,5 +129,6 @@ export async function getAdminBootstrap(): Promise<AdminData | null> {
       acao: a.acao,
       dataHora: new Date(a.data_hora).toLocaleString("pt-BR"),
     })),
+    proFlags,
   };
 }

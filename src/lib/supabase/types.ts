@@ -33,6 +33,7 @@ export type ProfessionalRow = {
   plano: Plano;
   avisos: { email: boolean; push: boolean };
   consentimento_texto_padrao: string;
+  feature_flags: Record<string, boolean>;
   stripe_customer_id: string | null;
   onboarding_done: boolean;
   criado_em: string;

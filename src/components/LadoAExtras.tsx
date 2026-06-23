@@ -6,7 +6,28 @@ import { Avatar, Badge, Button, Card, SectionLabel } from "./ui";
 import { AutomacaoEditor } from "./AutomacaoEditor";
 import { CommentDMSim } from "./CommentDMSim";
 import { OBJ, useStore } from "@/lib/store";
+import { hasFeature } from "@/lib/features";
 import type { Automation, Funnel } from "@/lib/types";
+
+/** Cartão de "recurso bloqueado" reutilizável quando a flag está off. */
+function RecursoBloqueado({ titulo, descricao }: { titulo: string; descricao: string }) {
+  return (
+    <div style={{ padding: "0 18px" }} className="lg:px-0">
+      <Card>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10, padding: "18px 12px" }}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: "var(--accent-050)", color: "var(--accent-800)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="lock" size={22} />
+          </div>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17 }}>{titulo}</div>
+          <div style={{ fontSize: 13.5, color: "var(--muted)", maxWidth: 320, lineHeight: 1.5 }}>{descricao}</div>
+          <a href="/planos" style={{ textDecoration: "none", marginTop: 4 }}>
+            <Button size="sm" icon="bolt">Ver planos</Button>
+          </a>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 /* ---- PlanosScreen ------------------------------------------------------- */
 export function PlanosScreen() {
@@ -416,6 +437,14 @@ export function AutomacoesScreen() {
   const [simRule, setSimRule] = React.useState<Automation | null>(null);
   const totalDms = automations.reduce((a, r) => a + r.stats.dms, 0);
   const totalLeads = automations.reduce((a, r) => a + r.stats.leads, 0);
+  if (!hasFeature(professional, "automacoes")) {
+    return (
+      <RecursoBloqueado
+        titulo="Automações não estão no seu plano"
+        descricao="Comment→DM no Instagram e disparos de WhatsApp ficam disponíveis no plano Pro ou liberando o recurso com o time."
+      />
+    );
+  }
   return (
     <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 14 }} className="lg:px-0">
       <div

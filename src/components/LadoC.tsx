@@ -7,7 +7,106 @@ import { Avatar, Badge, Button, EmptyState, Field, SectionLabel } from "./ui";
 import { DeskCard, Logo, PageHead, Td, Th, ConfirmModal } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
 import { useAdminData } from "@/hooks/useAdminData";
-import type { OtherPro, Professional, Funnel } from "@/lib/types";
+import { FEATURES, resolveFeatures, PLAN_DEFAULTS } from "@/lib/features";
+import { setFeatureFlagAction, setPlanAction } from "@/lib/actions/admin";
+import type { OtherPro, Professional, Funnel, Plano } from "@/lib/types";
+
+const PLANOS: Plano[] = ["entrada", "pro", "setup"];
+
+/** Seletor de plano + toggles de feature flags de um profissional (admin). */
+function FuncionalidadesCard({ proId, planoInicial }: { proId: string; planoInicial: Plano }) {
+  const toast = useStore((s) => s.toast);
+  const proFlags = useStore((s) => s.proFlags);
+  const [plano, setPlano] = React.useState<Plano>(planoInicial);
+  const [overrides, setOverrides] = React.useState<Record<string, boolean>>(proFlags[proId] ?? {});
+  const efetivo = resolveFeatures(plano, overrides);
+
+  const trocarPlano = async (p: Plano) => {
+    setPlano(p);
+    const { error } = await setPlanAction(proId, p);
+    toast(error ? "Falha ao alterar plano" : `Plano alterado para ${p}`);
+  };
+  const toggleFlag = async (key: string) => {
+    const novo = !efetivo[key as keyof typeof efetivo];
+    setOverrides((o) => ({ ...o, [key]: novo }));
+    const { error } = await setFeatureFlagAction(proId, key, novo);
+    toast(error ? "Falha ao salvar flag" : `'${key}' ${novo ? "ligada" : "desligada"}`);
+  };
+
+  return (
+    <DeskCard>
+      <h3 style={{ fontSize: 15, marginBottom: 12 }}>Plano & funcionalidades</h3>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {PLANOS.map((p) => (
+          <button
+            key={p}
+            onClick={() => trocarPlano(p)}
+            style={{
+              flex: 1,
+              padding: "8px 0",
+              borderRadius: 9,
+              fontWeight: 700,
+              fontSize: 12.5,
+              textTransform: "capitalize",
+              background: plano === p ? "var(--accent-050)" : "var(--card)",
+              color: plano === p ? "var(--accent-800)" : "var(--muted)",
+              border: `1.5px solid ${plano === p ? "var(--accent)" : "var(--line)"}`,
+            }}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {FEATURES.map((f) => {
+          const on = efetivo[f.key];
+          const isOverride = overrides[f.key] !== undefined && overrides[f.key] !== PLAN_DEFAULTS[plano][f.key];
+          return (
+            <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                  {f.label}
+                  {isOverride && (
+                    <span style={{ fontSize: 9.5, fontWeight: 800, background: "var(--amber-bg)", color: "var(--amber-ink)", padding: "1px 5px", borderRadius: 5 }}>
+                      OVERRIDE
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)" }}>{f.descricao}</div>
+              </div>
+              <button
+                onClick={() => toggleFlag(f.key)}
+                aria-pressed={on}
+                style={{
+                  width: 42,
+                  height: 24,
+                  borderRadius: 999,
+                  background: on ? "var(--accent)" : "var(--line)",
+                  position: "relative",
+                  flexShrink: 0,
+                  transition: "background .15s",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    left: on ? 20 : 2,
+                    width: 20,
+                    height: 20,
+                    borderRadius: "50%",
+                    background: "#fff",
+                    transition: "left .15s",
+                  }}
+                />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </DeskCard>
+  );
+}
 
 const PLANO_LABEL = { entrada: "Entrada", pro: "Pro", setup: "Setup" } as const;
 
@@ -811,7 +910,6 @@ export function DetalheConta({ proId }: { proId: string }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 24 }}>
-        <ActionBtn icon="bolt" label="Alterar plano" onClick={() => toast("Alterar plano (mock)")} />
         <ActionBtn icon="refresh" label="Reenviar convite" onClick={() => toast("Convite reenviado")} />
         <ActionBtn icon="sparkles" label="Abrir setup assistido" onClick={() => router.push("/admin/setups")} />
         <ActionBtn icon="eye" label="Entrar como" onClick={() => setImpersonate(true)} />
@@ -841,6 +939,7 @@ export function DetalheConta({ proId }: { proId: string }) {
             <InfoRow label="Valor" value={sub ? `R$${sub.valor}/${sub.ciclo === "mensal" ? "mês" : "única vez"}` : "—"} />
             <InfoRow label="Próx. vencimento" value={sub?.proximoVencimento || "—"} last />
           </DeskCard>
+          <FuncionalidadesCard proId={pro.id} planoInicial={pro.plano} />
           <DeskCard>
             <h3 style={{ fontSize: 15, marginBottom: 14 }}>Leads & agenda</h3>
             <div style={{ display: "flex", gap: 22 }}>

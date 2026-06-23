@@ -112,6 +112,7 @@ const emptyProfessional: Professional = {
   plano: "entrada",
   avisos: { email: true, push: true },
   consentimentoTextoPadrao: "",
+  featureFlags: {},
   criadoEm: "",
 };
 
@@ -153,6 +154,7 @@ type State = {
   consentLogs: ConsentLog[];
   internalUsers: InternalUser[];
   auditLog: AuditEntry[];
+  proFlags: Record<string, Record<string, boolean>>;
   onboardingDone: boolean;
   toastMsg: Toast;
 };
@@ -216,6 +218,7 @@ const initialState: State = {
   consentLogs: [],
   internalUsers: [],
   auditLog: [],
+  proFlags: {},
   onboardingDone: false,
   toastMsg: null,
 };
@@ -248,6 +251,7 @@ export const useStore = create<State & Actions>()((set, get) => ({
       consentLogs: data.consentLogs,
       internalUsers: data.internalUsers,
       auditLog: data.auditLog,
+      proFlags: data.proFlags,
     }),
 
   // Uso interno (preview no app). O funil público persiste via /api/lead.

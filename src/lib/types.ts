@@ -58,6 +58,8 @@ export type Professional = {
   plano: Plano;
   avisos: { email: boolean; push: boolean };
   consentimentoTextoPadrao: string;
+  /** Overrides de feature flags definidos pelo admin (default vem do plano). */
+  featureFlags: Record<string, boolean>;
   criadoEm: string;
 };
 

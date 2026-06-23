@@ -13,6 +13,7 @@ import {
 } from "./ui";
 import { BioLinkCard, Toggle, Logo } from "./shared";
 import { fmtWhats, useStore, waLink } from "@/lib/store";
+import { hasFeature } from "@/lib/features";
 import type { Lead } from "@/lib/types";
 
 /* ---- LoginScreen --------------------------------------------------------- */
@@ -623,7 +624,7 @@ export function LeadDetail({
             </a>
           ) : null}
         </div>
-        {lead.whatsapp && (
+        {lead.whatsapp && hasFeature(professional, "gerar_ia") && (
           <div style={{ marginTop: 8 }}>
             <Button full size="sm" variant="outline" icon="bolt" onClick={sugerirFollowup} disabled={draftingIa}>
               {draftingIa ? "Escrevendo…" : iaMsg ? "Refazer sugestão de follow-up" : "Sugerir follow-up com IA"}

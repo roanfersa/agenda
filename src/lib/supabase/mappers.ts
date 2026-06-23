@@ -36,6 +36,7 @@ export const toProfessional = (r: ProfessionalRow): Professional => ({
   plano: r.plano,
   avisos: r.avisos,
   consentimentoTextoPadrao: r.consentimento_texto_padrao,
+  featureFlags: r.feature_flags ?? {},
   criadoEm: r.criado_em,
 });
 
