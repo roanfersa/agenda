@@ -43,7 +43,10 @@ export async function recommendPage(input: {
       : "(nenhum produto informado)";
   const materiais =
     input.materiais && input.materiais.length > 0
-      ? "\nMateriais de referência:\n" + input.materiais.map((m) => `- ${m.titulo}: ${m.descricao}`).join("\n")
+      ? "\nMateriais de referência:\n" +
+        input.materiais
+          .map((m) => `- ${m.titulo}: ${m.descricao}${m.conteudo ? `\n  Conteúdo lido: ${m.conteudo.slice(0, 1500)}` : ""}`)
+          .join("\n")
       : "";
 
   const msg = await client.messages.create({

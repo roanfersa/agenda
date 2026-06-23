@@ -44,6 +44,34 @@ export function BioLinkEditor() {
   const [flowPreset, setFlowPreset] = React.useState<FlowPreset>(funnel.flowPreset || "bio_quiz");
   const [gerando, setGerando] = React.useState(false);
   const [uploading, setUploading] = React.useState<string | null>(null);
+  const [analisando, setAnalisando] = React.useState<string | null>(null);
+
+  // Lê/extrai o conteúdo de um material (PDF/DOCX/HTML/imagem) e cacheia.
+  const extrair = async (m: Material) => {
+    if (!m.url) return;
+    setAnalisando(m.id);
+    setMateriais((ms) => ms.map((x) => (x.id === m.id ? { ...x, status: "pendente" } : x)));
+    try {
+      const res = await fetch("/api/materials/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: m.tipo, url: m.url, titulo: m.titulo, descricao: m.descricao }),
+      });
+      const data = await res.json();
+      if (res.ok && data.conteudo) {
+        setMateriais((ms) => ms.map((x) => (x.id === m.id ? { ...x, conteudo: data.conteudo, status: "pronto" } : x)));
+        toast("Conteúdo lido ✓");
+      } else {
+        setMateriais((ms) => ms.map((x) => (x.id === m.id ? { ...x, status: "erro" } : x)));
+        toast(data.error || "Não consegui ler o material.");
+      }
+    } catch {
+      setMateriais((ms) => ms.map((x) => (x.id === m.id ? { ...x, status: "erro" } : x)));
+      toast("Erro de conexão ao ler o material.");
+    } finally {
+      setAnalisando(null);
+    }
+  };
 
   // Funil "ao vivo" pra prévia (mescla edições locais).
   const previewFunnel = { ...funnel, theme, blocks, flowPreset };
@@ -341,11 +369,32 @@ export function BioLinkEditor() {
                             setUploading(m.id);
                             try {
                               const url = await uploadFile("contexto", professional.id, file);
-                              setMateriais((ms) => ms.map((x) => x.id === m.id ? { ...x, url, titulo: x.titulo || file.name } : x));
-                            } catch { toast("Falha no upload"); } finally { setUploading(null); }
+                              const merged = { ...m, url, titulo: m.titulo || file.name };
+                              setMateriais((ms) => ms.map((x) => x.id === m.id ? merged : x));
+                              setUploading(null);
+                              extrair(merged); // lê o conteúdo automaticamente
+                            } catch { toast("Falha no upload"); setUploading(null); }
                           }} />
                         </label>
                       )
+                    )}
+                    {/* Status da leitura + ações */}
+                    {(m.url || m.conteudo) && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: m.status === "erro" ? "var(--danger)" : m.status === "pronto" ? "var(--accent)" : "var(--muted)" }}>
+                          {analisando === m.id || m.status === "pendente" ? "Lendo conteúdo…" : m.status === "pronto" ? "Conteúdo lido ✓" : m.status === "erro" ? "Falha na leitura" : "Não lido"}
+                        </span>
+                        {m.url && (
+                          <button onClick={() => extrair(m)} disabled={analisando === m.id} style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700 }}>
+                            {m.tipo === "link" ? "Ler página" : "Reanalisar"}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {m.conteudo && (
+                      <div style={{ fontSize: 12, color: "var(--muted)", background: "var(--bg)", borderRadius: 8, padding: "8px 10px", maxHeight: 96, overflow: "auto", lineHeight: 1.4 }}>
+                        {m.conteudo.slice(0, 400)}{m.conteudo.length > 400 ? "…" : ""}
+                      </div>
                     )}
                   </div>
                 </Card>

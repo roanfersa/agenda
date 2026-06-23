@@ -64,6 +64,9 @@ export type Material = {
   titulo: string;
   descricao: string;
   url?: string;
+  /** Conteúdo lido/resumido pela IA (PDF/DOCX/HTML/imagem). Cacheado. */
+  conteudo?: string;
+  status?: "pendente" | "pronto" | "erro";
 };
 
 export type Funnel = {

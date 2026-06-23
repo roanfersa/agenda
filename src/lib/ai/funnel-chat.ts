@@ -54,7 +54,10 @@ export async function nextChatTurn(input: {
       : "(nenhum produto cadastrado)";
   const materiais =
     input.materiais && input.materiais.length > 0
-      ? "\nMATERIAIS DE REFERÊNCIA:\n" + input.materiais.map((m) => `- ${m.titulo}: ${m.descricao}`).join("\n")
+      ? "\nMATERIAIS DE REFERÊNCIA:\n" +
+        input.materiais
+          .map((m) => `- ${m.titulo}: ${m.descricao}${m.conteudo ? `\n  Conteúdo lido: ${m.conteudo.slice(0, 1500)}` : ""}`)
+          .join("\n")
       : "";
 
   const historico = input.history.map((t) => `${t.role === "bot" ? "Bot" : "Pessoa"}: ${t.text}`).join("\n") || "(início)";
