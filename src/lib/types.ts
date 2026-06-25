@@ -241,6 +241,7 @@ export type AuditEntry = {
 export type Automation = {
   id: string;
   ativa: boolean;
+  funnelId?: string | null;
   postLegenda: string;
   postTipo: string;
   postEmoji: string;

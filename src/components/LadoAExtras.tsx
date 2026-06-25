@@ -433,10 +433,31 @@ export function AutomacoesScreen() {
   const automations = useStore((s) => s.automations);
   const toggleAutomation = useStore((s) => s.toggleAutomation);
   const professional = useStore((s) => s.professional);
+  const instagram = useStore((s) => s.instagram);
+  const toast = useStore((s) => s.toast);
   const [editing, setEditing] = React.useState<Automation | "new" | null>(null);
   const [simRule, setSimRule] = React.useState<Automation | null>(null);
   const totalDms = automations.reduce((a, r) => a + r.stats.dms, 0);
   const totalLeads = automations.reduce((a, r) => a + r.stats.leads, 0);
+
+  // Resultado da conexão do Instagram (?ig=...).
+  React.useEffect(() => {
+    const ig = new URLSearchParams(window.location.search).get("ig");
+    if (!ig) return;
+    const msg: Record<string, string> = {
+      conectado: "Instagram conectado ✓",
+      erro: "Não foi possível conectar o Instagram.",
+      semconta: "Nenhuma conta Instagram Business ligada à sua página.",
+      naoconfigurado: "Integração Meta ainda não configurada (App).",
+    };
+    toast(msg[ig] || "Conexão do Instagram atualizada.");
+    window.history.replaceState({}, "", "/automacoes");
+  }, [toast]);
+
+  const desconectarIg = async () => {
+    await fetch("/api/instagram/disconnect", { method: "POST" });
+    window.location.reload();
+  };
   if (!hasFeature(professional, "automacoes")) {
     return (
       <RecursoBloqueado
@@ -476,38 +497,34 @@ export function AutomacoesScreen() {
         <div style={{ flex: 1, minWidth: 160 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontWeight: 700, fontSize: 14.5 }}>
-              {professional.handleInstagram || "Sua conta"}
+              {instagram.connected ? `@${instagram.username}` : professional.handleInstagram || "Sua conta"}
             </span>
             <span
               style={{
                 fontSize: 10.5,
                 fontWeight: 800,
-                background: "#FFB35C",
-                color: "#3a2400",
+                background: instagram.connected ? "rgba(46,209,143,.22)" : "rgba(255,255,255,.16)",
+                color: instagram.connected ? "#7CF0C0" : "#fff",
                 padding: "3px 7px",
                 borderRadius: 6,
               }}
             >
-              RECURSO PRO
-            </span>
-            <span
-              title="A automação real do Instagram/WhatsApp é ativada após a aprovação da sua conta na Meta Business."
-              style={{
-                fontSize: 10.5,
-                fontWeight: 800,
-                background: "rgba(255,255,255,.16)",
-                color: "#fff",
-                padding: "3px 7px",
-                borderRadius: 6,
-              }}
-            >
-              CONEXÃO META PENDENTE
+              {instagram.connected ? "CONECTADO" : "NÃO CONECTADO"}
             </span>
           </div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,.65)", marginTop: 2 }}>
             {totalDms} DMs enviadas · {totalLeads} viraram leads no funil
           </div>
         </div>
+        {instagram.connected ? (
+          <button onClick={desconectarIg} style={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,.7)", flexShrink: 0 }}>
+            Desconectar
+          </button>
+        ) : (
+          <a href="/api/instagram/connect" style={{ textDecoration: "none", flexShrink: 0 }}>
+            <Button size="sm" icon="instagram">Conectar Instagram</Button>
+          </a>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <SectionLabel>Suas automações</SectionLabel>

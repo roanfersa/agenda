@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { getConnectionStatus } from "@/lib/data/instagram";
 import {
   toAppointment,
   toAutomation,
@@ -32,6 +33,7 @@ export type BootstrapData = {
   disponibilidade: Disponibilidade[];
   subscription: Subscription | null;
   onboardingDone: boolean;
+  instagram: { connected: boolean; username: string };
 };
 
 /**
@@ -76,5 +78,6 @@ export async function getBootstrap(): Promise<BootstrapData | null> {
     disponibilidade: (dispo.data ?? []).map(toDisponibilidade),
     subscription: subs.data?.[0] ? toSubscription(subs.data[0]) : null,
     onboardingDone: prof.data.onboarding_done,
+    instagram: await getConnectionStatus(user.id),
   };
 }

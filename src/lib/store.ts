@@ -163,6 +163,7 @@ type State = {
   internalUsers: InternalUser[];
   auditLog: AuditEntry[];
   proFlags: Record<string, Record<string, boolean>>;
+  instagram: { connected: boolean; username: string };
   onboardingDone: boolean;
   toastMsg: Toast;
 };
@@ -227,6 +228,7 @@ const initialState: State = {
   internalUsers: [],
   auditLog: [],
   proFlags: {},
+  instagram: { connected: false, username: "" },
   onboardingDone: false,
   toastMsg: null,
 };
@@ -248,6 +250,7 @@ export const useStore = create<State & Actions>()((set, get) => ({
       disponibilidade: data.disponibilidade,
       subscriptions: data.subscription ? [data.subscription] : [],
       onboardingDone: data.onboardingDone,
+      instagram: data.instagram,
     }),
 
   hydrateAdmin: (data) =>

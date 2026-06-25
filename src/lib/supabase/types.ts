@@ -105,6 +105,7 @@ export type AutomationRow = {
   id: string;
   professional_id: string;
   ativa: boolean;
+  funnel_id: string | null;
   post_legenda: string;
   post_tipo: string;
   post_emoji: string;
@@ -212,6 +213,20 @@ export type Database = {
         internal_user: string;
         acao: string;
         data_hora: string;
+      }>;
+      instagram_connections: TableDef<{
+        professional_id: string;
+        ig_user_id: string;
+        ig_username: string;
+        page_id: string | null;
+        access_token: string;
+        token_expires_at: string | null;
+        connected_at: string;
+      }>;
+      instagram_events: TableDef<{
+        id: string;
+        professional_id: string | null;
+        processed_at: string;
       }>;
     };
     Views: Record<string, never>;

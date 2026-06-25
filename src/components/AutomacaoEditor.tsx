@@ -44,7 +44,9 @@ export function AutomacaoEditor({
   onTest: (rule: Automation) => void;
 }) {
   const saveAutomation = useStore((s) => s.saveAutomation);
+  const funnels = useStore((s) => s.funnels);
   const toast = useStore((s) => s.toast);
+  const [funnelId, setFunnelId] = React.useState<string>(rule?.funnelId || funnels[0]?.id || "");
 
   const [post, setPost] = React.useState(
     rule
@@ -76,6 +78,7 @@ export function AutomacaoEditor({
     respostaPublicaTexto: pubTexto,
     dmMensagem,
     dmBotao,
+    funnelId: funnelId || null,
     stats: rule ? rule.stats : { comentarios: 0, dms: 0, leads: 0 },
   });
 
@@ -254,6 +257,30 @@ export function AutomacaoEditor({
           <div style={{ marginTop: 10 }}>
             <Field label="Texto do botão (abre o bio-funil)" value={dmBotao} onChange={setDmBotao} icon="link" />
           </div>
+        </div>
+        <div>
+          <SectionLabel style={{ marginBottom: 9 }}>5 · Qual funil/link mandar na DM</SectionLabel>
+          <select
+            value={funnelId}
+            onChange={(e) => setFunnelId(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              borderRadius: 12,
+              border: "1.5px solid var(--line)",
+              background: "var(--card)",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "var(--ink)",
+            }}
+          >
+            {funnels.length === 0 && <option value="">Nenhum funil</option>}
+            {funnels.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome} (/{f.slug})
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </Overlay>

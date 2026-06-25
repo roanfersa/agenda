@@ -145,6 +145,7 @@ export const toAppointment = (r: AppointmentRow): Appointment => ({
 export const toAutomation = (r: AutomationRow): Automation => ({
   id: r.id,
   ativa: r.ativa,
+  funnelId: r.funnel_id,
   postLegenda: r.post_legenda,
   postTipo: r.post_tipo,
   postEmoji: r.post_emoji,
@@ -160,6 +161,7 @@ export const fromAutomation = (
   a: Partial<Automation>,
 ): Partial<AutomationRow> => ({
   ...(a.ativa !== undefined && { ativa: a.ativa }),
+  ...(a.funnelId !== undefined && { funnel_id: a.funnelId }),
   ...(a.postLegenda !== undefined && { post_legenda: a.postLegenda }),
   ...(a.postTipo !== undefined && { post_tipo: a.postTipo }),
   ...(a.postEmoji !== undefined && { post_emoji: a.postEmoji }),
