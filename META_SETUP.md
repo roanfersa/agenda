@@ -1,61 +1,69 @@
 # Ativar a automação do Instagram (comentário → DM)
 
-O código está **pronto-pra-ativar**. Falta criar o App na Meta e preencher as
-variáveis de ambiente. A automação só funciona **em produção (HTTPS público)** —
-o webhook da Meta não aceita `localhost` (em dev, use um túnel como ngrok).
+Usamos o **"Login do Instagram"** (Instagram API with Instagram login): o
+profissional conecta com a **própria conta do Instagram**, **sem precisar de
+Página do Facebook**. O código está pronto-pra-ativar; falta criar o App e
+preencher as variáveis de ambiente.
 
-## 1. Pré-requisitos da conta
-- O Instagram do profissional precisa ser **conta Business ou Creator**.
-- Essa conta precisa estar **vinculada a uma Página do Facebook**.
+> A automação só funciona em **produção (HTTPS público)** — o webhook do
+> Instagram não aceita `localhost`. Em dev, use um túnel (ngrok).
 
-## 2. Criar o App na Meta
-1. https://developers.facebook.com → **Criar app** → tipo **Business**.
-2. Adicione o produto **Instagram Graph API** (e **Facebook Login**).
-3. Em **Configurações → Básico**, copie **App ID** e **App Secret**.
-4. Permissões necessárias (entram no **App Review** para uso público):
-   `instagram_basic`, `instagram_manage_comments`, `instagram_manage_messages`,
-   `pages_show_list`, `pages_manage_metadata`, `business_management`.
-   *(Em desenvolvimento, funcionam com contas de teste/roles do app sem review.)*
+## 1. Pré-requisito do usuário
+- A conta precisa ser **Instagram Profissional** (Comercial ou Criador de
+  conteúdo). Conversão: app do Instagram → Configurações → Conta → Mudar para
+  conta profissional. **Não precisa de Página do Facebook.**
 
-## 3. Facebook Login — Redirect URI
-Em **Facebook Login → Configurações**, adicione a URL de callback:
+## 2. Criar o App
+1. https://developers.facebook.com → **Criar app** → caso de uso que inclua
+   **Instagram** (ou adicione o produto **Instagram**).
+2. No produto **Instagram → API setup with Instagram login**, copie o
+   **Instagram App ID** e o **Instagram App Secret**.
+3. Permissões (entram no **App Review** para uso público; em dev funcionam com
+   contas de teste/roles do app):
+   `instagram_business_basic`, `instagram_business_manage_comments`,
+   `instagram_business_manage_messages`.
+
+## 3. OAuth — Redirect URI
+Em **Instagram → API setup with Instagram login → Business login settings**,
+adicione a URL de callback:
 `https://SEU_DOMINIO/api/instagram/callback`
-(e a de dev, se usar túnel: `https://xxxx.ngrok.app/api/instagram/callback`).
+(e a de dev com túnel, se for testar antes do deploy).
 
 ## 4. Webhook
-Em **Webhooks** (produto do app), assine o objeto **instagram**:
+Em **Instagram → Webhooks**, configure:
 - **Callback URL:** `https://SEU_DOMINIO/api/webhooks/instagram`
-- **Verify token:** o mesmo valor de `META_WEBHOOK_VERIFY_TOKEN` no seu `.env`.
-- Campos: marque **comments** (e `messages` se quiser).
-A Meta faz um GET de verificação; nossa rota responde o `hub.challenge`
-automaticamente. A inscrição da Página é feita pelo app no momento da conexão
-(`subscribed_apps`).
+- **Verify token:** o mesmo valor de `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`.
+- Campos: **comments** (e `messages` se quiser).
+A Meta faz um GET de verificação; nossa rota responde o `hub.challenge`.
+A inscrição da conta é feita pelo app na hora da conexão (`subscribed_apps`).
 
 ## 5. Variáveis de ambiente
 ```
-META_APP_ID=...
-META_APP_SECRET=...
-META_WEBHOOK_VERIFY_TOKEN=algum-segredo-que-voce-define
-META_GRAPH_VERSION=v21.0
+INSTAGRAM_APP_ID=...
+INSTAGRAM_APP_SECRET=...
+INSTAGRAM_WEBHOOK_VERIFY_TOKEN=algum-segredo-que-voce-define
+INSTAGRAM_GRAPH_VERSION=v21.0
 NEXT_PUBLIC_SITE_URL=https://SEU_DOMINIO
 ```
 
-## 6. Como o profissional conecta
-No app: **Automações → Conectar Instagram**. Isso abre o login do Facebook,
-descobre a Página + a conta IG Business, salva o token (tabela
-`instagram_connections`, só acessível pela service role) e inscreve os webhooks.
+## 6. Como o profissional conecta (UX)
+**Automações → Conectar Instagram** abre um checklist rápido (conta
+profissional? é admin?) e depois o **login do Instagram**. Ao autorizar,
+salvamos o token (tabela `instagram_connections`, só service role) e inscrevemos
+os webhooks. Sem Página do Facebook, sem fricção extra.
 
 ## 7. Como funciona em produção
 1. Alguém comenta uma palavra-chave num post.
-2. A Meta chama `POST /api/webhooks/instagram` (validamos a assinatura).
+2. A Meta chama `POST /api/webhooks/instagram` (validamos a assinatura com o App
+   Secret).
 3. Casamos a palavra-chave com uma automação ativa do profissional.
-4. Respondemos publicamente ao comentário (opcional) e enviamos a **DM** com o
-   link do funil escolhido na automação.
-5. Idempotência por `comment_id` (tabela `instagram_events`) evita reenvio.
+4. Respondemos publicamente (opcional) e enviamos a **DM** com o link do funil
+   escolhido na automação.
+5. Idempotência por `comment_id` (tabela `instagram_events`).
 
 ## Segurança / notas
-- Tokens ficam em `instagram_connections` (RLS sem policies → só service role);
-  nunca vão ao navegador.
-- O webhook valida `X-Hub-Signature-256` com o App Secret.
-- Tokens de página de longa duração (~60 dias) — renovação periódica é um
-  próximo passo (cron) se necessário.
+- Tokens em `instagram_connections` (RLS sem policies → só service role); nunca
+  vão ao navegador.
+- Webhook valida `X-Hub-Signature-256` com o Instagram App Secret.
+- Token de longa duração (~60 dias); renovação periódica (cron) é um próximo
+  passo se necessário.

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@/lib/supabase/server";
-import { getOAuthUrl, isMetaConfigured } from "@/lib/integrations/meta";
+import { getOAuthUrl, isInstagramConfigured } from "@/lib/integrations/meta";
 
-/** Inicia a conexão do Instagram: redireciona pro diálogo OAuth do Facebook. */
+/** Inicia a conexão: redireciona pro diálogo OAuth do Instagram (sem FB Page). */
 export async function GET(request: Request) {
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-  if (!isMetaConfigured()) {
+  if (!isInstagramConfigured()) {
     return NextResponse.redirect(`${site}/automacoes?ig=naoconfigurado`);
   }
 

@@ -4,12 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import {
   exchangeCodeForToken,
   getLongLivedToken,
-  getPageAndIg,
-  subscribePage,
+  getMe,
+  subscribe,
 } from "@/lib/integrations/meta";
 import { saveConnection } from "@/lib/data/instagram";
 
-/** Callback OAuth: troca o code, descobre a conta IG, inscreve webhooks e salva. */
+/** Callback OAuth do Instagram: troca o code, lê o perfil, inscreve e salva. */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
@@ -30,21 +30,17 @@ export async function GET(request: Request) {
 
   try {
     const redirectUri = `${site}/api/instagram/callback`;
-    const shortToken = await exchangeCodeForToken(code, redirectUri);
-    const { token, expiresIn } = await getLongLivedToken(shortToken);
-    const acc = await getPageAndIg(token);
-    if (!acc) {
-      return NextResponse.redirect(`${site}/automacoes?ig=semconta`);
-    }
-    // Inscreve a página nos webhooks (comentários/mensagens).
-    await subscribePage(acc.pageId, acc.pageToken).catch(() => {});
+    const short = await exchangeCodeForToken(code, redirectUri);
+    const { token, expiresIn } = await getLongLivedToken(short.token);
+    const me = await getMe(token);
+    await subscribe(token).catch(() => {}); // best-effort
 
     await saveConnection({
       professional_id: user.id,
-      ig_user_id: acc.igUserId,
-      ig_username: acc.igUsername,
-      page_id: acc.pageId,
-      access_token: acc.pageToken, // token da página (longa duração)
+      ig_user_id: me.igUserId || short.igUserId,
+      ig_username: me.username,
+      page_id: null, // fluxo Instagram Login não usa Página do Facebook
+      access_token: token,
       token_expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
     });
 

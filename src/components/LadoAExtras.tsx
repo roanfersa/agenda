@@ -5,6 +5,7 @@ import { Icon } from "./Icon";
 import { Avatar, Badge, Button, Card, SectionLabel } from "./ui";
 import { AutomacaoEditor } from "./AutomacaoEditor";
 import { CommentDMSim } from "./CommentDMSim";
+import { Overlay } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
 import { hasFeature } from "@/lib/features";
 import type { Automation, Funnel } from "@/lib/types";
@@ -437,6 +438,7 @@ export function AutomacoesScreen() {
   const toast = useStore((s) => s.toast);
   const [editing, setEditing] = React.useState<Automation | "new" | null>(null);
   const [simRule, setSimRule] = React.useState<Automation | null>(null);
+  const [showConnect, setShowConnect] = React.useState(false);
   const totalDms = automations.reduce((a, r) => a + r.stats.dms, 0);
   const totalLeads = automations.reduce((a, r) => a + r.stats.leads, 0);
 
@@ -446,9 +448,9 @@ export function AutomacoesScreen() {
     if (!ig) return;
     const msg: Record<string, string> = {
       conectado: "Instagram conectado ✓",
-      erro: "Não foi possível conectar o Instagram.",
-      semconta: "Nenhuma conta Instagram Business ligada à sua página.",
-      naoconfigurado: "Integração Meta ainda não configurada (App).",
+      erro: "Não consegui conectar. Confirme que sua conta é Profissional (Comercial/Criador) e tente de novo.",
+      semconta: "Sua conta do Instagram precisa ser Profissional (Comercial/Criador).",
+      naoconfigurado: "Integração do Instagram ainda não configurada (App).",
     };
     toast(msg[ig] || "Conexão do Instagram atualizada.");
     window.history.replaceState({}, "", "/automacoes");
@@ -521,9 +523,9 @@ export function AutomacoesScreen() {
             Desconectar
           </button>
         ) : (
-          <a href="/api/instagram/connect" style={{ textDecoration: "none", flexShrink: 0 }}>
-            <Button size="sm" icon="instagram">Conectar Instagram</Button>
-          </a>
+          <Button size="sm" icon="instagram" onClick={() => setShowConnect(true)} style={{ flexShrink: 0 }}>
+            Conectar Instagram
+          </Button>
         )}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -693,6 +695,37 @@ export function AutomacoesScreen() {
         />
       )}
       {simRule && <CommentDMSim rule={simRule} onClose={() => setSimRule(null)} />}
+      {showConnect && (
+        <Overlay
+          onClose={() => setShowConnect(false)}
+          title="Conectar seu Instagram"
+          footer={
+            <a href="/api/instagram/connect" style={{ textDecoration: "none", width: "100%" }}>
+              <Button full icon="instagram">Conectar agora</Button>
+            </a>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.5 }}>
+              Você vai conectar com o login do <b>próprio Instagram</b> — sem precisar de Página do Facebook.
+              Antes, confira:
+            </p>
+            {[
+              ["Conta Profissional", "Seu Instagram precisa ser Comercial ou de Criador de conteúdo (em Configurações → Conta → Mudar para conta profissional)."],
+              ["Você é admin da conta", "Faça o login com a conta que administra o perfil."],
+              ["Permissões", "Vamos pedir acesso a comentários e mensagens — é o que permite responder e enviar a DM automática."],
+            ].map(([t, d]) => (
+              <div key={t} style={{ display: "flex", gap: 10 }}>
+                <span style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1 }}><Icon name="check" size={18} /></span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>{t}</div>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.45 }}>{d}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Overlay>
+      )}
     </div>
   );
 }
