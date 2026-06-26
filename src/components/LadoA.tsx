@@ -164,7 +164,9 @@ export function LoginScreen({
           </div>
         </div>
         <div style={{ padding: "24px 0 6px", textAlign: "center", fontSize: 12.5, color: "var(--faint)", lineHeight: 1.5 }}>
-          Ao continuar você concorda com os Termos e a Política de Privacidade.
+          Ao continuar você concorda com os{" "}
+          <a href="/termos" style={{ color: "var(--muted)", fontWeight: 600 }}>Termos</a> e a{" "}
+          <a href="/privacidade" style={{ color: "var(--muted)", fontWeight: 600 }}>Política de Privacidade</a>.
         </div>
       </div>
     </div>
