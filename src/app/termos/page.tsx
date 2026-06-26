@@ -38,7 +38,7 @@ export default function TermosPage() {
 
       <H2>7. Alterações e contato</H2>
       <p>Podemos atualizar estes termos. Dúvidas:{" "}
-        <a href="mailto:contato@getrevo.com.br">contato@getrevo.com.br</a>.</p>
+        <a href="mailto:atendimento@leverpeak.com.br">atendimento@leverpeak.com.br</a>.</p>
 
       <p style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 28 }}>
         Modelo inicial — recomenda-se revisão jurídica antes do uso comercial definitivo.

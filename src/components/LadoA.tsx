@@ -167,6 +167,9 @@ export function LoginScreen({
           Ao continuar você concorda com os{" "}
           <a href="/termos" style={{ color: "var(--muted)", fontWeight: 600 }}>Termos</a> e a{" "}
           <a href="/privacidade" style={{ color: "var(--muted)", fontWeight: 600 }}>Política de Privacidade</a>.
+          <div style={{ marginTop: 8, fontSize: 11.5 }}>
+            LEVERPEAK LTDA · CNPJ 67.097.696/0001-97
+          </div>
         </div>
       </div>
     </div>

@@ -17,8 +17,10 @@ export default function PrivacidadePage() {
 
       <H2>1. Quem somos</H2>
       <p>
-        Controlador: Revo. Contato do encarregado de dados (DPO):{" "}
-        <a href="mailto:privacidade@getrevo.com.br">privacidade@getrevo.com.br</a>.
+        O Revo é um produto operado por <b>LEVERPEAK LTDA</b>, inscrita no CNPJ{" "}
+        <b>67.097.696/0001-97</b>, com sede na Av. Paulista, 1636, conj. 4, sala 1504, Bela Vista,
+        São Paulo/SP, CEP 01.310-200. Controlador dos dados nos termos da LGPD. Contato:{" "}
+        <a href="mailto:atendimento@leverpeak.com.br">atendimento@leverpeak.com.br</a>.
       </p>
 
       <H2>2. Dados que coletamos</H2>
@@ -63,7 +65,7 @@ export default function PrivacidadePage() {
       <H2>7. Seus direitos e exclusão de dados (LGPD)</H2>
       <p>Você pode solicitar acesso, correção, portabilidade ou <b>exclusão</b> dos seus dados, bem
         como revogar consentimentos. Para isso, escreva para{" "}
-        <a href="mailto:privacidade@getrevo.com.br">privacidade@getrevo.com.br</a> ou, no caso de leads,
+        <a href="mailto:atendimento@leverpeak.com.br">atendimento@leverpeak.com.br</a> ou, no caso de leads,
         acione o profissional responsável pelo funil. Profissionais podem desconectar o Instagram a
         qualquer momento para interromper o tratamento desses dados.</p>
 
@@ -76,7 +78,7 @@ export default function PrivacidadePage() {
         serviço.</p>
 
       <H2>10. Contato</H2>
-      <p>Dúvidas sobre privacidade: <a href="mailto:privacidade@getrevo.com.br">privacidade@getrevo.com.br</a>.</p>
+      <p>Dúvidas sobre privacidade: <a href="mailto:atendimento@leverpeak.com.br">atendimento@leverpeak.com.br</a>.</p>
 
       <p style={{ fontSize: 12.5, color: "var(--faint)", marginTop: 28 }}>
         Este documento é um modelo inicial e deve ser revisado por assessoria jurídica antes do uso

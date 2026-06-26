@@ -32,8 +32,21 @@ export function LegalPage({
         <div style={{ fontSize: 15, lineHeight: 1.65, color: "var(--ink-2, #3A463F)" }} className="legal">
           {children}
         </div>
+        <CompanyFooter />
       </article>
     </div>
+  );
+}
+
+/** Identificação legal da empresa (exigida pela Meta no site). */
+export function CompanyFooter() {
+  return (
+    <footer style={{ marginTop: 36, paddingTop: 18, borderTop: "1px solid var(--line)", fontSize: 12.5, color: "var(--faint)", lineHeight: 1.6 }}>
+      <b style={{ color: "var(--muted)" }}>Revo</b> é um produto de <b style={{ color: "var(--muted)" }}>LEVERPEAK LTDA</b>
+      {" "}— CNPJ 67.097.696/0001-97.<br />
+      Av. Paulista, 1636, conj. 4, sala 1504 — Bela Vista, São Paulo/SP — CEP 01.310-200.<br />
+      Contato: <a href="mailto:atendimento@leverpeak.com.br">atendimento@leverpeak.com.br</a>.
+    </footer>
   );
 }
 
