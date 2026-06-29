@@ -49,7 +49,7 @@ export function Logo({ size = 28, light }: { size?: number; light?: boolean }) {
           color: light ? "#fff" : "var(--ink)",
         }}
       >
-        Agendaí
+        Revo
       </span>
     </div>
   );

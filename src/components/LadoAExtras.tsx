@@ -139,7 +139,7 @@ export function PlanosScreen() {
         <div>
           <div style={{ fontWeight: 700, fontSize: 15 }}>Uma secretária custa R$1.500+/mês.</div>
           <div style={{ fontSize: 13, color: "rgba(255,255,255,.65)", marginTop: 2 }}>
-            O Agendaí faz o filtro e marca por você.
+            O Revo faz o filtro e marca por você.
           </div>
         </div>
       </div>

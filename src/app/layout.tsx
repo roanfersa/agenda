@@ -17,9 +17,9 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Agendaí — Bio-funil que agenda",
+  title: "Revo — bio-link que qualifica e agenda",
   description:
-    "O fim do 'chama no direct'. Ferramenta Brasil-first, nativa de WhatsApp, para profissionais solo.",
+    "O fim do 'chama no direct'. Bio-link inteligente que capta, qualifica e agenda — direto da sua bio.",
 };
 
 export default function RootLayout({
