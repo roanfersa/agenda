@@ -242,6 +242,7 @@ export type Automation = {
   id: string;
   ativa: boolean;
   funnelId?: string | null;
+  postId?: string | null;
   postLegenda: string;
   postTipo: string;
   postEmoji: string;

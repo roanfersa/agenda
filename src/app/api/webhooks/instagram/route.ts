@@ -69,7 +69,13 @@ export async function POST(request: Request) {
         .eq("professional_id", conn.professional_id)
         .eq("ativa", true);
 
-      const auto = (autos ?? []).find((a) => matchKeyword(text, (a.keywords as string[]) ?? []));
+      // Casa por palavra-chave e, quando a automação tem post definido, pelo post.
+      const mediaId = c.media?.id;
+      const auto = (autos ?? []).find(
+        (a) =>
+          matchKeyword(text, (a.keywords as string[]) ?? []) &&
+          (!a.post_id || a.post_id === mediaId),
+      );
       if (!auto) continue;
 
       // Link do funil pra mandar no DM.

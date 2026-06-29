@@ -106,6 +106,7 @@ export type AutomationRow = {
   professional_id: string;
   ativa: boolean;
   funnel_id: string | null;
+  post_id: string | null;
   post_legenda: string;
   post_tipo: string;
   post_emoji: string;

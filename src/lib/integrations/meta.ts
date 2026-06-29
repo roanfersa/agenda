@@ -116,6 +116,30 @@ export async function sendPrivateReply(
   });
 }
 
+// ── Mídia (posts) — para escolher o post da automação ───────────────────────
+
+export type IgMedia = {
+  id: string;
+  caption: string;
+  mediaType: string;
+  thumbnail: string | null;
+  permalink: string;
+};
+
+/** Lista as publicações recentes da conta conectada. */
+export async function getMedia(token: string, igUserId: string, limit = 24): Promise<IgMedia[]> {
+  const data = await gget<{
+    data?: Array<{ id: string; caption?: string; media_type?: string; media_url?: string; thumbnail_url?: string; permalink?: string }>;
+  }>(`${GRAPH}/${VERSION}/${igUserId}/media?fields=id,caption,media_type,media_url,thumbnail_url,permalink&limit=${limit}&access_token=${token}`);
+  return (data.data ?? []).map((m) => ({
+    id: m.id,
+    caption: m.caption ?? "",
+    mediaType: m.media_type ?? "",
+    thumbnail: m.thumbnail_url || m.media_url || null,
+    permalink: m.permalink ?? "",
+  }));
+}
+
 // ── Conversas (DM) — para o atendimento humano (Human Agent) ────────────────
 
 async function gget<T>(url: string): Promise<T> {

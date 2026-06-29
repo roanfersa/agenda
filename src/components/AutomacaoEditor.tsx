@@ -7,14 +7,15 @@ import { Overlay } from "./shared";
 import { useStore } from "@/lib/store";
 import type { Automation } from "@/lib/types";
 
-const MOCK_POSTS = [
-  { postLegenda: "3 sinais de que sua ansiedade pede ajuda", postTipo: "Reels", postEmoji: "🌿" },
-  { postLegenda: "Carrossel: 5 práticas de autoconhecimento", postTipo: "Carrossel", postEmoji: "✨" },
-  { postLegenda: "O que é terapia tântrica (sem tabu)", postTipo: "Reels", postEmoji: "🔥" },
-  { postLegenda: "Como saber se é a hora de começar", postTipo: "Foto", postEmoji: "🧘" },
-];
+type Post = { id: string; caption: string; mediaType: string; thumbnail: string | null; permalink: string };
 
-function PostThumb({ emoji, size = 40 }: { emoji: string; size?: number }) {
+function PostThumb({ thumbnail, emoji, size = 40 }: { thumbnail?: string | null; emoji?: string; size?: number }) {
+  if (thumbnail) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={thumbnail} alt="" width={size} height={size} style={{ width: size, height: size, borderRadius: 12, objectFit: "cover", flexShrink: 0 }} />
+    );
+  }
   return (
     <div
       style={{
@@ -29,7 +30,7 @@ function PostThumb({ emoji, size = 40 }: { emoji: string; size?: number }) {
         fontSize: size * 0.42,
       }}
     >
-      {emoji}
+      {emoji || "📷"}
     </div>
   );
 }
@@ -51,8 +52,36 @@ export function AutomacaoEditor({
   const [post, setPost] = React.useState(
     rule
       ? { postLegenda: rule.postLegenda, postTipo: rule.postTipo, postEmoji: rule.postEmoji }
-      : MOCK_POSTS[0],
+      : { postLegenda: "", postTipo: "", postEmoji: "" },
   );
+  const [postId, setPostId] = React.useState<string>(rule?.postId ?? "");
+  const [posts, setPosts] = React.useState<Post[]>([]);
+  const [loadingPosts, setLoadingPosts] = React.useState(true);
+  const [postsErro, setPostsErro] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/instagram/media");
+        const data = await res.json();
+        if (res.ok) setPosts(data.posts ?? []);
+        else setPostsErro(data.error || "Não foi possível carregar seus posts.");
+      } catch {
+        setPostsErro("Erro de conexão ao carregar posts.");
+      } finally {
+        setLoadingPosts(false);
+      }
+    })();
+  }, []);
+
+  const escolherPost = (p: Post) => {
+    setPostId(p.id);
+    setPost({
+      postLegenda: p.caption || "(sem legenda)",
+      postTipo: p.mediaType === "VIDEO" ? "Reels" : p.mediaType === "CAROUSEL_ALBUM" ? "Carrossel" : "Foto",
+      postEmoji: "",
+    });
+  };
   const [keywords, setKeywords] = React.useState<string[]>(rule ? [...rule.keywords] : ["QUERO"]);
   const [kwInput, setKwInput] = React.useState("");
   const [dmMensagem, setDmMensagem] = React.useState(
@@ -73,6 +102,7 @@ export function AutomacaoEditor({
     id: rule?.id || "auto_" + Math.random().toString(36).slice(2, 7),
     ativa: rule ? rule.ativa : true,
     ...post,
+    postId: postId || null,
     keywords,
     respostaPublica: pub,
     respostaPublicaTexto: pubTexto,
@@ -107,13 +137,19 @@ export function AutomacaoEditor({
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20 }}>
         <div>
           <SectionLabel style={{ marginBottom: 9 }}>1 · Em qual post?</SectionLabel>
+          {loadingPosts && <p style={{ fontSize: 13, color: "var(--muted)" }}>Carregando seus posts…</p>}
+          {!loadingPosts && postsErro && <p style={{ fontSize: 13, color: "var(--danger)" }}>{postsErro}</p>}
+          {!loadingPosts && !postsErro && posts.length === 0 && (
+            <p style={{ fontSize: 13, color: "var(--muted)" }}>Nenhuma publicação encontrada nesta conta.</p>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 9 }}>
-            {MOCK_POSTS.map((p) => {
-              const on = p.postLegenda === post.postLegenda;
+            {posts.map((p) => {
+              const on = postId === p.id;
+              const tipo = p.mediaType === "VIDEO" ? "Reels" : p.mediaType === "CAROUSEL_ALBUM" ? "Carrossel" : "Foto";
               return (
                 <button
-                  key={p.postLegenda}
-                  onClick={() => setPost(p)}
+                  key={p.id}
+                  onClick={() => escolherPost(p)}
                   style={{
                     display: "flex",
                     gap: 10,
@@ -125,9 +161,9 @@ export function AutomacaoEditor({
                     background: on ? "var(--accent-050)" : "var(--card)",
                   }}
                 >
-                  <PostThumb emoji={p.postEmoji} />
+                  <PostThumb thumbnail={p.thumbnail} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--muted)" }}>{p.postTipo}</div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--muted)" }}>{tipo}</div>
                     <div
                       style={{
                         fontSize: 12.5,
@@ -140,7 +176,7 @@ export function AutomacaoEditor({
                         overflow: "hidden",
                       }}
                     >
-                      {p.postLegenda}
+                      {p.caption || "(sem legenda)"}
                     </div>
                   </div>
                 </button>
