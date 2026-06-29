@@ -23,6 +23,12 @@ function isProProtected(pathname: string) {
  * Supabase (mantendo os cookies sincronizados) e protege as rotas.
  */
 export async function proxy(req: NextRequest) {
+  // Rotas de auth (callback OAuth, signout) gerenciam os cookies por conta
+  // própria — o proxy não deve refazer a sessão aqui.
+  if (req.nextUrl.pathname.startsWith("/auth")) {
+    return NextResponse.next({ request: req });
+  }
+
   let res = NextResponse.next({ request: req });
 
   const supabase = createServerClient(

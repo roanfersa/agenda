@@ -886,10 +886,9 @@ export function ConfigScreen({ go }: { go: (s: string) => void }) {
   const [editPerfil, setEditPerfil] = React.useState(false);
   const [editWa, setEditWa] = React.useState(false);
   const cal = professional.googleCalendar;
-  const handleSignOut = async () => {
-    const { createClient } = await import("@/lib/supabase/client");
-    await createClient().auth.signOut();
-    window.location.href = "/entrar";
+  const handleSignOut = () => {
+    // Logout server-side (limpa os cookies de sessão e redireciona).
+    window.location.href = "/auth/signout";
   };
   return (
     <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 18 }} className="lg:px-0 lg:max-w-2xl">
