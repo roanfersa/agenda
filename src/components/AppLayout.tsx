@@ -196,7 +196,7 @@ export function AppLayout({
       >
         {/* Mobile top header */}
         <div
-          className="lg:hidden"
+          className="flex lg:hidden"
           style={{
             position: "sticky",
             top: 0,
@@ -204,7 +204,6 @@ export function AppLayout({
             background: "var(--card)",
             borderBottom: "1px solid var(--line)",
             padding: "12px 16px 14px",
-            display: "flex",
             alignItems: "center",
             gap: 12,
             paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)",
@@ -234,10 +233,9 @@ export function AppLayout({
 
         {/* Desktop header — same title row but inside the column */}
         <div
-          className="hidden lg:block"
+          className="hidden lg:flex"
           style={{
             padding: "26px 30px 6px",
-            display: "flex",
             alignItems: "flex-end",
             justifyContent: "space-between",
             gap: 16,
@@ -286,7 +284,7 @@ export function AppLayout({
       {/* Mobile tabbar */}
       {MOBILE_TABS.includes(screen) && (
         <nav
-          className="lg:hidden"
+          className="flex lg:hidden"
           style={{
             position: "fixed",
             bottom: 0,
@@ -297,7 +295,6 @@ export function AppLayout({
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             borderTop: "1px solid var(--line)",
-            display: "flex",
             justifyContent: "space-around",
             paddingTop: 9,
             paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 9px)",
