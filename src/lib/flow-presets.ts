@@ -24,8 +24,8 @@ const qid = () => `q_${(_q++).toString(36)}`;
 export const FLOW_PRESETS: FlowPresetDef[] = [
   {
     key: "bio_quiz",
-    label: "Quiz da bio (recomendação)",
-    descricao: "Igual ao benchmark: poucas perguntas e a IA recomenda o melhor caminho/produto.",
+    label: "Quiz de recomendação",
+    descricao: "Faz de 2 a 4 perguntas e a IA recomenda o produto ou link ideal. Indicado para link na bio com várias ofertas.",
     objetivo: "qualificar",
     boasVindas: "Oi! 🤍 Responde 3 perguntinhas que eu te mostro o melhor caminho pra você.",
     perguntas: [
@@ -37,8 +37,8 @@ export const FLOW_PRESETS: FlowPresetDef[] = [
   },
   {
     key: "agendamento",
-    label: "Agendamento guiado",
-    descricao: "Conduz a pessoa até marcar um horário no próprio chat.",
+    label: "Agendamento",
+    descricao: "Conduz o visitante até escolher um horário e marcar o atendimento no próprio chat.",
     objetivo: "agendar",
     boasVindas: "Oi! Vou te ajudar a marcar seu horário em 1 minutinho. 🗓️",
     perguntas: [
@@ -51,7 +51,7 @@ export const FLOW_PRESETS: FlowPresetDef[] = [
   {
     key: "captura",
     label: "Captura de contato",
-    descricao: "Pega o contato e continua a conversa no WhatsApp.",
+    descricao: "Coleta nome e contato do visitante e direciona a conversa para o WhatsApp.",
     objetivo: "capturar",
     boasVindas: "Oi! Deixa seu contato que eu te chamo pra continuar por lá. 💬",
     perguntas: [
@@ -61,8 +61,8 @@ export const FLOW_PRESETS: FlowPresetDef[] = [
   },
   {
     key: "qualificar",
-    label: "Qualificar pra vender",
-    descricao: "Filtra e encaminha o lead quente pro time/WhatsApp.",
+    label: "Qualificação",
+    descricao: "Faz perguntas-chave, classifica o lead e encaminha os mais qualificados para o WhatsApp.",
     objetivo: "qualificar",
     boasVindas: "Oi! Me conta rapidinho seu cenário que eu te direciono certo. 🎯",
     perguntas: [

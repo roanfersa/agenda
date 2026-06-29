@@ -113,8 +113,11 @@ export function FunilEditor() {
   const editor = (
     <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
       <div>
-        <SectionLabel style={{ marginBottom: 8 }}>Objetivo do funil</SectionLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 7 }} className="lg:grid-cols-3">
+        <SectionLabel style={{ marginBottom: 4 }}>Objetivo do funil</SectionLabel>
+        <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "0 0 10px" }}>
+          O que o visitante faz ao final do fluxo. Escolha uma opção:
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {OBJETIVOS.map((m) => {
             const on = objetivo === m.id;
             return (
@@ -123,20 +126,39 @@ export function FunilEditor() {
                 onClick={() => setObjetivo(m.id)}
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "11px 10px",
+                  alignItems: "flex-start",
+                  gap: 11,
+                  padding: "12px 13px",
                   borderRadius: 12,
-                  fontWeight: 700,
-                  fontSize: 12.5,
+                  textAlign: "left",
                   background: on ? "var(--accent-050)" : "var(--card)",
-                  color: on ? "var(--accent-800)" : "var(--muted)",
                   border: `1.5px solid ${on ? "var(--accent)" : "var(--line)"}`,
                   transition: "all .15s",
                 }}
               >
-                <Icon name={m.icon as never} size={16} />
-                {m.curto}
+                <span
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 8,
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: on ? "var(--accent)" : "var(--bg)",
+                    color: on ? "#fff" : "var(--muted)",
+                  }}
+                >
+                  <Icon name={m.icon as never} size={16} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: on ? "var(--accent-800)" : "var(--ink)" }}>
+                    {m.titulo}
+                  </span>
+                  <span style={{ display: "block", fontSize: 12.5, color: "var(--muted)", marginTop: 1, lineHeight: 1.4 }}>
+                    {m.beneficio} <span style={{ color: "var(--faint)" }}>· Ex.: {m.exemplo}</span>
+                  </span>
+                </span>
               </button>
             );
           })}

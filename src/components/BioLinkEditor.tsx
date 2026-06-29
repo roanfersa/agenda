@@ -306,7 +306,10 @@ export function BioLinkEditor() {
 
           {tab === "funil" && (
             <div>
-              <SectionLabel style={{ marginBottom: 8 }}>Preset de fluxo</SectionLabel>
+              <SectionLabel style={{ marginBottom: 4 }}>Tipo de funil</SectionLabel>
+              <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "0 0 10px" }}>
+                Define o comportamento do fluxo. Aplica perguntas e mensagem iniciais — você ajusta tudo abaixo.
+              </p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 18 }}>
                 {FLOW_PRESETS.map((p) => (
                   <button key={p.key} onClick={() => { setFlowPreset(p.key); updateFunnel({ perguntas: presetQuestions(p.key), mensagemBoasVindas: p.boasVindas, objetivo: p.objetivo }); toast("Preset aplicado — ajuste o conteúdo abaixo"); }}

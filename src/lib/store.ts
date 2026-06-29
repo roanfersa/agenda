@@ -74,9 +74,9 @@ function persist(
 
 // ---- Objetivos (fonte única de verdade) ----------------------------------
 export const OBJETIVOS: ObjetivoDef[] = [
-  { id: "agendar", icon: "calendar", titulo: "Agendar", curto: "Agendar", beneficio: "Encher a agenda com horários marcados", desc: "A pessoa sai com o horário marcado.", exemplo: "Consultas, sessões, avaliações", cta: "Marcar horário", sched: true },
-  { id: "qualificar", icon: "target", titulo: "Qualificar pra vender (SDR)", curto: "SDR", beneficio: "Falar só com quem tá pronto pra fechar", desc: "Filtra e encaminha o lead quente pro time de vendas.", exemplo: "Serviços, B2B, alto ticket", cta: "Falar com o time", sched: false },
-  { id: "capturar", icon: "whatsapp", titulo: "Capturar contato", curto: "Capturar", beneficio: "Pegar o contato pra não perder ninguém", desc: "Pega o contato e continua a conversa no WhatsApp.", exemplo: "Dúvidas, lista de interesse", cta: "Falar no WhatsApp", sched: false },
+  { id: "agendar", icon: "calendar", titulo: "Agendar", curto: "Agendar", beneficio: "O visitante marca um horário direto no funil.", desc: "O visitante escolhe e confirma um horário no próprio fluxo.", exemplo: "Consultas, sessões, avaliações", cta: "Marcar horário", sched: true },
+  { id: "qualificar", icon: "target", titulo: "Qualificar", curto: "Qualificar", beneficio: "Classifica os contatos e encaminha os mais prontos.", desc: "Faz perguntas-chave e direciona o lead qualificado para o atendimento.", exemplo: "Serviços, B2B, alto ticket", cta: "Falar com o time", sched: false },
+  { id: "capturar", icon: "whatsapp", titulo: "Capturar contato", curto: "Capturar", beneficio: "Coleta o contato para continuar no WhatsApp.", desc: "Registra nome e contato e segue a conversa no WhatsApp.", exemplo: "Dúvidas, lista de interesse", cta: "Falar no WhatsApp", sched: false },
 ];
 
 export const OBJ = (id?: Objetivo) =>
