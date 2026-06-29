@@ -5,7 +5,7 @@ import { Icon } from "./Icon";
 import { Avatar, Badge, Button, Card, SectionLabel } from "./ui";
 import { AutomacaoEditor } from "./AutomacaoEditor";
 import { CommentDMSim } from "./CommentDMSim";
-import { Overlay } from "./shared";
+import { Overlay, funnelUrl } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
 import { hasFeature } from "@/lib/features";
 import type { Automation, Funnel } from "@/lib/types";
@@ -338,9 +338,15 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
             whiteSpace: "nowrap",
           }}
         >
-          agendai.com.br/f/{f.slug}
+          {funnelUrl(f.slug).replace(/^https?:\/\//, "")}
         </span>
-        <button onClick={() => toast("Link copiado!")} style={{ color: "var(--muted)", display: "flex", flexShrink: 0 }}>
+        <button
+          onClick={async () => {
+            try { await navigator.clipboard.writeText(funnelUrl(f.slug)); toast("Link copiado ✓"); }
+            catch { toast("Não consegui copiar."); }
+          }}
+          style={{ color: "var(--muted)", display: "flex", flexShrink: 0 }}
+        >
           <Icon name="copy" size={15} />
         </button>
       </div>

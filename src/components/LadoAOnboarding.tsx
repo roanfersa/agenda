@@ -8,6 +8,7 @@ import {
   EditableBlock,
   QuestionEditor,
   StepWrap,
+  funnelUrl,
   type QFull,
 } from "./shared";
 import { inferObjetivo, OBJ, OBJETIVOS, useStore } from "@/lib/store";
@@ -1030,7 +1031,7 @@ export function LadoAOnboarding({
       </Button>
     );
   } else if (cur === "publicar") {
-    const url = `agendai.com.br/f/${funnel.slug}`;
+    const url = funnelUrl(funnel.slug).replace(/^https?:\/\//, "");
     body = (
       <div style={{ padding: "32px 22px", textAlign: "center" }}>
         <div

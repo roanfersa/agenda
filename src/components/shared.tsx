@@ -734,15 +734,37 @@ export function ConfirmModal({
 }
 
 /* ---- BioLinkCard ------------------------------------------------------- */
+const SITE_BASE = (process.env.NEXT_PUBLIC_SITE_URL || "https://getrevo.com.br").replace(/\/$/, "");
+export const funnelUrl = (slug: string) => `${SITE_BASE}/f/${slug}`;
+
 export function BioLinkCard({
   slug,
-  onCopy,
-  onShare,
+  onToast,
 }: {
   slug: string;
-  onCopy: () => void;
-  onShare: () => void;
+  onToast?: (msg: string) => void;
 }) {
+  const url = funnelUrl(slug);
+  const host = SITE_BASE.replace(/^https?:\/\//, "");
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      onToast?.("Link copiado ✓");
+    } catch {
+      onToast?.("Não consegui copiar o link.");
+    }
+  };
+  const onShare = async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({ title: "Meu link", url });
+      } catch {
+        /* usuário cancelou */
+      }
+    } else {
+      onCopy();
+    }
+  };
   return (
     <div style={{ background: "var(--ink)", borderRadius: "var(--r-lg)", padding: 16, color: "#fff" }}>
       <div
@@ -771,7 +793,7 @@ export function BioLinkCard({
             whiteSpace: "nowrap",
           }}
         >
-          agendai.com.br/f/{slug}
+          {host}/f/{slug}
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 13 }}>

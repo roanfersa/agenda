@@ -146,11 +146,7 @@ export function AppLayout({
           })}
         </nav>
         <div style={{ marginTop: 16 }}>
-          <BioLinkCard
-            slug={funnel.slug}
-            onCopy={() => toast("Link copiado!")}
-            onShare={() => toast("Abrindo compartilhamento…")}
-          />
+          <BioLinkCard slug={funnel.slug} onToast={toast} />
         </div>
         <div
           style={{

@@ -72,6 +72,43 @@ export async function setFeatureFlagAction(proId: string, key: string, value: bo
   return { error: null };
 }
 
+/** Remove um membro da equipe interna (não permite remover a si mesmo). */
+export async function removeInternalUserAction(id: string) {
+  const { ok, userId } = await assertInternal();
+  if (!ok) return { error: "forbidden" };
+  if (id === userId) return { error: "Você não pode remover a si mesmo." };
+  const db = createAdminClient();
+  const { data: u } = await db.from("internal_users").select("nome").eq("id", id).single();
+  const { error } = await db.from("internal_users").delete().eq("id", id);
+  if (error) return { error: error.message };
+  await logAudit(userId, `Removeu ${u?.nome ?? id} da equipe interna`);
+  return { error: null };
+}
+
+/**
+ * Concede acesso de equipe interna a um usuário JÁ CADASTRADO (por e-mail).
+ * A pessoa precisa ter criado a conta antes. Retorna o membro criado.
+ */
+export async function grantInternalAction(email: string, papel: "admin" | "operacao" | "financeiro") {
+  const { ok, userId } = await assertInternal();
+  if (!ok) return { error: "forbidden" as string, membro: null };
+  const db = createAdminClient();
+
+  // Procura o usuário de auth pelo e-mail.
+  const { data: list } = await db.auth.admin.listUsers();
+  const target = list?.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+  if (!target) {
+    return { error: "Nenhuma conta com esse e-mail. Peça para a pessoa criar a conta primeiro.", membro: null };
+  }
+  const nome = (target.user_metadata?.nome as string) || target.email || "Membro";
+  const { error } = await db
+    .from("internal_users")
+    .upsert({ id: target.id, nome, email: target.email ?? email, papel });
+  if (error) return { error: error.message, membro: null };
+  await logAudit(userId, `Adicionou ${nome} à equipe interna (${papel})`);
+  return { error: null, membro: { id: target.id, nome, email: target.email ?? email, papel } };
+}
+
 /** Altera o plano de outro profissional (service role + auditoria). */
 export async function setPlanAction(proId: string, plano: Plano) {
   const { ok, userId } = await assertInternal();

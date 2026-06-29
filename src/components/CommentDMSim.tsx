@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Icon } from "./Icon";
 import { Avatar, TypingDots } from "./ui";
-import { Overlay } from "./shared";
+import { Overlay, funnelUrl } from "./shared";
 import { useStore } from "@/lib/store";
 import type { Automation } from "@/lib/types";
 
@@ -383,7 +383,7 @@ export function CommentDMSim({ rule, onClose }: { rule: Automation; onClose: () 
                       </span>
                       <span style={{ textAlign: "left", flex: 1 }}>
                         <span style={{ display: "block", fontWeight: 700, fontSize: 14 }}>{rule.dmBotao}</span>
-                        <span style={{ fontSize: 11.5, opacity: 0.85 }}>agendai.com.br/f/{funnel.slug}</span>
+                        <span style={{ fontSize: 11.5, opacity: 0.85 }}>{funnelUrl(funnel.slug).replace(/^https?:\/\//, "")}</span>
                       </span>
                       <Icon name="chevRight" size={18} />
                     </a>

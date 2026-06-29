@@ -8,7 +8,7 @@ import { DeskCard, Logo, PageHead, Td, Th, ConfirmModal } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
 import { useAdminData } from "@/hooks/useAdminData";
 import { FEATURES, resolveFeatures, PLAN_DEFAULTS } from "@/lib/features";
-import { setFeatureFlagAction, setPlanAction } from "@/lib/actions/admin";
+import { setFeatureFlagAction, setPlanAction, grantInternalAction } from "@/lib/actions/admin";
 import type { OtherPro, Professional, Funnel, Plano } from "@/lib/types";
 
 const PLANOS: Plano[] = ["entrada", "pro", "setup"];
@@ -246,7 +246,7 @@ export function DeskShell({
               fontWeight: 600,
             }}
           >
-            <Icon name="lock" size={12} /> backoffice.agendai.com.br/admin/{screen === "overview" ? "" : screen}
+            <Icon name="lock" size={12} /> getrevo.com.br/admin/{screen === "overview" ? "" : screen}
           </div>
           <div style={{ width: 60 }} />
         </div>
@@ -1243,19 +1243,18 @@ export function Assinaturas() {
                   </Td>
                   <Td style={{ textAlign: "right" }}>
                     {s.status === "atrasado" ? (
-                      <button
-                        onClick={() => toast("Cobrança marcada como resolvida (mock)")}
-                        style={{ fontSize: 12.5, fontWeight: 700, color: "var(--accent)", whiteSpace: "nowrap" }}
-                      >
-                        Marcar resolvida
-                      </button>
+                      <span style={{ fontSize: 12, color: "var(--muted)", whiteSpace: "nowrap" }}>
+                        Sincroniza via Stripe
+                      </span>
                     ) : (
-                      <button
-                        onClick={() => toast("Histórico de cobranças (mock)")}
-                        style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)", whiteSpace: "nowrap" }}
+                      <a
+                        href="https://dashboard.stripe.com/customers"
+                        target="_blank"
+                        rel="noopener"
+                        style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)", whiteSpace: "nowrap", textDecoration: "none" }}
                       >
-                        Ver histórico
-                      </button>
+                        Ver na Stripe
+                      </a>
                     )}
                   </Td>
                 </tr>
@@ -1434,14 +1433,35 @@ const PERMS: Record<string, string> = {
 
 export function Equipe() {
   const internalUsers = useStore((s) => s.internalUsers);
+  const removeInternalUser = useStore((s) => s.removeInternalUser);
+  const addInternalUser = useStore((s) => s.addInternalUser);
   const toast = useStore((s) => s.toast);
+
+  const convidar = async () => {
+    const email = window.prompt("E-mail da pessoa (precisa já ter conta no Revo):");
+    if (!email?.trim()) return;
+    const { error, membro } = await grantInternalAction(email.trim(), "operacao");
+    if (error || !membro) {
+      toast(error || "Não foi possível adicionar.");
+      return;
+    }
+    addInternalUser(membro);
+    toast(`${membro.nome} adicionado à equipe ✓`);
+  };
+
+  const remover = (id: string, nome: string) => {
+    if (!window.confirm(`Remover ${nome} da equipe interna?`)) return;
+    removeInternalUser(id);
+    toast("Membro removido");
+  };
+
   return (
     <div>
       <PageHead
         title="Equipe interna"
         sub="Usuários e papéis"
         action={
-          <Button variant="dark" icon="plus" onClick={() => toast("Convidar membro (mock)")}>
+          <Button variant="dark" icon="plus" onClick={convidar}>
             Convidar membro
           </Button>
         }
@@ -1474,8 +1494,8 @@ export function Equipe() {
                     {u.email}
                   </div>
                 </div>
-                <button onClick={() => toast("Remover membro (mock)")} style={{ color: "var(--faint)", display: "flex" }}>
-                  <Icon name="dots" size={18} />
+                <button onClick={() => remover(u.id, u.nome)} style={{ color: "var(--faint)", display: "flex" }} title="Remover">
+                  <Icon name="trash" size={17} />
                 </button>
               </div>
               <Badge bg={bg} fg={fg}>

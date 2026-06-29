@@ -295,11 +295,7 @@ export function Dashboard({
       className="lg:px-0"
     >
       <div className="lg:hidden">
-        <BioLinkCard
-          slug={funnel.slug}
-          onCopy={() => toast("Link copiado!")}
-          onShare={() => toast("Abrindo compartilhamento…")}
-        />
+        <BioLinkCard slug={funnel.slug} onToast={toast} />
       </div>
       <div style={{ display: "flex", gap: 10 }} className="lg:grid lg:grid-cols-4 lg:gap-4">
         <StatCard icon="bell" value={novos} label="Leads novos" tone="accent" />

@@ -25,7 +25,7 @@ import type {
 import { DEFAULT_THEME } from "./types";
 import type { BootstrapData } from "./data/bootstrap";
 import type { AdminData } from "./data/admin-bootstrap";
-import { resolveLgpdAction, advanceSetupAction } from "./actions/admin";
+import { resolveLgpdAction, advanceSetupAction, removeInternalUserAction } from "./actions/admin";
 import {
   saveFunnelAction,
   createFunnelAction,
@@ -205,6 +205,8 @@ type Actions = {
   markLeadRead: (id: string) => void;
   resolveLgpd: (id: string) => void;
   advanceSetup: (id: string, status: SetupStatus) => void;
+  removeInternalUser: (id: string) => void;
+  addInternalUser: (member: InternalUser) => void;
   toast: (msg: string) => void;
   reset: () => void;
 };
@@ -478,6 +480,16 @@ export const useStore = create<State & Actions>()((set, get) => ({
     set((s) => ({ setups: s.setups.map((t) => (t.id === id ? { ...t, status } : t)) }));
     persist(advanceSetupAction(id, status), get().toast);
   },
+
+  removeInternalUser: (id) => {
+    set((s) => ({ internalUsers: s.internalUsers.filter((u) => u.id !== id) }));
+    persist(removeInternalUserAction(id), get().toast);
+  },
+
+  addInternalUser: (member) =>
+    set((s) => ({
+      internalUsers: [member, ...s.internalUsers.filter((u) => u.id !== member.id)],
+    })),
 
   toast: (msg) => {
     const id = uid("t");
