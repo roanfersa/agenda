@@ -116,6 +116,65 @@ export async function sendPrivateReply(
   });
 }
 
+// ── Conversas (DM) — para o atendimento humano (Human Agent) ────────────────
+
+async function gget<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || "Graph API error");
+  return data as T;
+}
+
+export type IgConversation = { id: string; username: string; userId: string; updatedTime: string };
+export type IgMessage = { id: string; fromId: string; text: string; createdTime: string };
+
+/** Lista as conversas de DM da conta. selfId = id da conta conectada. */
+export async function getConversations(token: string, selfId: string): Promise<IgConversation[]> {
+  const data = await gget<{
+    data?: Array<{ id: string; updated_time: string; participants?: { data: Array<{ id: string; username?: string }> } }>;
+  }>(`${GRAPH}/${VERSION}/me/conversations?platform=instagram&fields=id,updated_time,participants{id,username}&access_token=${token}`);
+  return (data.data ?? []).map((c) => {
+    const ps = c.participants?.data ?? [];
+    const other = ps.find((p) => p.id !== selfId) ?? ps[0];
+    return { id: c.id, username: other?.username ?? "", userId: other?.id ?? "", updatedTime: c.updated_time };
+  });
+}
+
+/** Mensagens de uma conversa (ordem cronológica). */
+export async function getConversationMessages(conversationId: string, token: string): Promise<IgMessage[]> {
+  const data = await gget<{
+    messages?: { data: Array<{ id: string; from?: { id: string }; message?: string; created_time: string }> };
+  }>(`${GRAPH}/${VERSION}/${conversationId}?fields=messages{id,from,message,created_time}&access_token=${token}`);
+  return (data.messages?.data ?? [])
+    .map((m) => ({ id: m.id, fromId: m.from?.id ?? "", text: m.message ?? "", createdTime: m.created_time }))
+    .reverse();
+}
+
+/**
+ * Envia uma DM. Com humanAgent=true usa a tag HUMAN_AGENT, que permite ao
+ * atendente humano responder dentro da janela de 7 dias após a última mensagem.
+ */
+export async function sendMessage(recipientId: string, text: string, token: string, humanAgent = false): Promise<void> {
+  const body: Record<string, unknown> = {
+    recipient: { id: recipientId },
+    message: { text },
+    access_token: token,
+  };
+  if (humanAgent) {
+    body.messaging_type = "MESSAGE_TAG";
+    body.tag = "HUMAN_AGENT";
+  }
+  const res = await fetch(`${GRAPH}/${VERSION}/me/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e?.error?.message || "Falha ao enviar mensagem");
+  }
+}
+
 /** Verifica a assinatura X-Hub-Signature-256 do webhook (HMAC com o app secret). */
 export function verifySignature(rawBody: string, signature: string | null): boolean {
   const secret = process.env.INSTAGRAM_APP_SECRET;

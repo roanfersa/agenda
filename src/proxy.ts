@@ -10,6 +10,7 @@ const PRO_PROTECTED = [
   "/funil",
   "/planos",
   "/automacoes",
+  "/conversas",
   "/onboarding",
 ];
 

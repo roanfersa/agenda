@@ -31,6 +31,17 @@ export async function getConnectionStatus(professionalId: string): Promise<{ con
   return { connected: Boolean(data), username: data?.ig_username ?? "" };
 }
 
+/** Conexão completa (com token) do profissional logado — uso server-side. */
+export async function getConnectionByProfessional(professionalId: string): Promise<IgConnection | null> {
+  const db = createAdminClient();
+  const { data } = await db
+    .from("instagram_connections")
+    .select("*")
+    .eq("professional_id", professionalId)
+    .maybeSingle();
+  return data ?? null;
+}
+
 export async function getConnectionByIgUserId(igUserId: string): Promise<IgConnection | null> {
   const db = createAdminClient();
   const { data } = await db
