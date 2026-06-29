@@ -177,7 +177,9 @@ export function AppLayout({
             >
               {professional.nome}
             </div>
-            <div style={{ fontSize: 11.5, color: "var(--muted)" }}>Plano Entrada</div>
+            <div style={{ fontSize: 11.5, color: "var(--muted)" }}>
+              Plano {professional.plano === "pro" ? "Pro" : professional.plano === "setup" ? "Setup" : "Entrada"}
+            </div>
           </div>
         </div>
       </aside>
