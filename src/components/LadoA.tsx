@@ -712,43 +712,116 @@ export function LeadDetail({
 }
 
 /* ---- AgendaScreen -------------------------------------------------------- */
+const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+
+/** Editor de disponibilidade: define os horários que o lead pode marcar no funil. */
+function DisponibilidadeEditor() {
+  const disponibilidade = useStore((s) => s.disponibilidade);
+  const setDisponibilidade = useStore((s) => s.setDisponibilidade);
+  const [horas, setHoras] = React.useState<Record<string, string[]>>(() => {
+    const m: Record<string, string[]> = {};
+    disponibilidade.forEach((d) => (m[d.dia] = [...d.horarios].sort()));
+    return m;
+  });
+  const [novo, setNovo] = React.useState<Record<string, string>>({});
+  const [dirty, setDirty] = React.useState(false);
+  const [aberto, setAberto] = React.useState(disponibilidade.length === 0);
+
+  const addHora = (dia: string) => {
+    const h = (novo[dia] || "").trim();
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(h)) return;
+    setHoras((s) => {
+      const atual = s[dia] || [];
+      return atual.includes(h) ? s : { ...s, [dia]: [...atual, h].sort() };
+    });
+    setNovo((s) => ({ ...s, [dia]: "" }));
+    setDirty(true);
+  };
+  const removeHora = (dia: string, h: string) => {
+    setHoras((s) => ({ ...s, [dia]: (s[dia] || []).filter((x) => x !== h) }));
+    setDirty(true);
+  };
+  const salvar = () => {
+    const dias = DIAS_SEMANA.filter((d) => (horas[d] || []).length).map((d) => ({
+      id: "",
+      rotulo: d,
+      dia: d,
+      horarios: horas[d],
+    }));
+    setDisponibilidade(dias);
+    setDirty(false);
+  };
+  const total = Object.values(horas).reduce((n, hs) => n + hs.length, 0);
+
+  return (
+    <Card pad={16}>
+      <button onClick={() => setAberto((v) => !v)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
+        <span style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-050)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon name="calendar" size={18} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Sua disponibilidade</span>
+          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
+            {total ? `${total} horário${total > 1 ? "s" : ""} — o lead escolhe direto na conversa` : "Defina os horários que o lead pode marcar no funil"}
+          </span>
+        </span>
+        <Icon name="chevDown" size={18} style={{ color: "var(--faint)", transform: aberto ? "rotate(180deg)" : "none", transition: "transform .2s", flexShrink: 0 }} />
+      </button>
+      {aberto && (
+        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+          {DIAS_SEMANA.map((dia) => (
+            <div key={dia} style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
+              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)", marginBottom: 8 }}>{dia}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                {(horas[dia] || []).map((h) => (
+                  <span key={h} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--accent-050)", color: "var(--accent-800)", border: "1px solid var(--accent-100)", borderRadius: 16, padding: "5px 6px 5px 11px", fontWeight: 700, fontSize: 13 }}>
+                    {h}
+                    <button onClick={() => removeHora(dia, h)} aria-label="remover" style={{ display: "inline-flex", color: "var(--accent-800)", opacity: 0.7 }}>
+                      <Icon name="x" size={13} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  type="time"
+                  value={novo[dia] || ""}
+                  onChange={(e) => setNovo((s) => ({ ...s, [dia]: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && addHora(dia)}
+                  style={{ border: "1.5px solid var(--line)", borderRadius: 10, padding: "6px 8px", fontSize: 13, fontFamily: "var(--font)", color: "var(--ink)" }}
+                />
+                <button onClick={() => addHora(dia)} style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--accent)", fontWeight: 700, fontSize: 13 }}>
+                  <Icon name="plus" size={14} /> add
+                </button>
+              </div>
+            </div>
+          ))}
+          <Button onClick={salvar} disabled={!dirty} icon="check">
+            Salvar disponibilidade
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function AgendaScreen({ openLead }: { openLead: (id: string) => void }) {
   const appointments = useStore((s) => s.appointments);
   const leads = useStore((s) => s.leads);
-  const professional = useStore((s) => s.professional);
   const appts = [...appointments].sort((a, b) => a.dataHora.localeCompare(b.dataHora));
   const groups: Record<string, typeof appts> = {};
   appts.forEach((a) => {
     (groups[a.diaRotulo] = groups[a.diaRotulo] || []).push(a);
   });
   const keys = Object.keys(groups);
-  if (!appts.length)
-    return (
-      <div style={{ padding: "0 18px" }}>
-        <EmptyState
-          icon="calendar"
-          title="Agenda livre"
-          body="Quando alguém marcar pelo funil, aparece aqui — e no seu Google Agenda."
-        />
-      </div>
-    );
   return (
     <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 9,
-          background: "var(--accent-050)",
-          borderRadius: 12,
-          padding: "11px 14px",
-        }}
-      >
-        <Icon name="google" size={18} />
-        <span style={{ fontSize: 13, color: "var(--accent-800)", fontWeight: 600 }}>
-          Sincronizado com {professional.googleCalendar.calendarId}
-        </span>
-      </div>
+      <DisponibilidadeEditor />
+      {!appts.length && (
+        <EmptyState
+          icon="calendar"
+          title="Nenhum agendamento ainda"
+          body="Quando alguém marcar um horário pelo seu funil, aparece aqui."
+        />
+      )}
       {keys.map((k) => (
         <div key={k}>
           <SectionLabel style={{ marginBottom: 8, paddingLeft: 2 }}>{k}</SectionLabel>

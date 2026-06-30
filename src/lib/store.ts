@@ -37,6 +37,7 @@ import {
   toggleAutomationAction,
   deleteAutomationAction,
 } from "./actions/automations";
+import { saveAvailabilityAction } from "./actions/availability";
 import {
   updateProfessionalAction,
   setCalendarAction,
@@ -193,6 +194,7 @@ type Actions = {
   toggleAutomation: (id: string) => void;
   deleteAutomation: (id: string) => void;
   saveAutomation: (rule: Automation) => void;
+  setDisponibilidade: (dias: Disponibilidade[]) => void;
   captureComment: (autoId: string) => void;
   updateFunnel: (patch: Partial<Funnel>) => void;
   setActiveFunnel: (id: string) => void;
@@ -357,6 +359,12 @@ export const useStore = create<State & Actions>()((set, get) => ({
   deleteAutomation: (id) => {
     set((s) => ({ automations: s.automations.filter((a) => a.id !== id) }));
     persist(deleteAutomationAction(id), get().toast);
+  },
+
+  setDisponibilidade: (dias) => {
+    const comIds = dias.map((d) => ({ ...d, id: d.id || uuid() }));
+    set({ disponibilidade: comIds });
+    persist(saveAvailabilityAction(comIds), get().toast);
   },
 
   saveAutomation: (rule) => {
