@@ -57,8 +57,9 @@ export async function proxy(req: NextRequest) {
 
   const { pathname } = req.nextUrl;
 
-  if (pathname === "/") {
-    return NextResponse.redirect(new URL(user ? "/inicio" : "/entrar", req.url));
+  // Raiz: logado vai pro app; visitante vê a landing page pública.
+  if (pathname === "/" && user) {
+    return NextResponse.redirect(new URL("/inicio", req.url));
   }
 
   if (pathname === "/entrar" && user) {
