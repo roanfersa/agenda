@@ -33,8 +33,10 @@ function matchKeyword(text: string, keywords: string[]): boolean {
 export async function POST(request: Request) {
   const raw = await request.text();
   if (!verifySignature(raw, request.headers.get("x-hub-signature-256"))) {
+    console.warn("[IG webhook] assinatura inválida — verifique o App Secret");
     return new Response("invalid signature", { status: 401 });
   }
+  console.log("[IG webhook] evento recebido:", raw.slice(0, 600));
 
   let body: { object?: string; entry?: Entry[] };
   try {
@@ -57,7 +59,10 @@ export async function POST(request: Request) {
       if (!commentId || c.from?.id === igUserId) continue;
 
       const conn = await getConnectionByIgUserId(igUserId);
-      if (!conn) continue;
+      if (!conn) {
+        console.warn("[IG webhook] sem conexão para igUserId", igUserId);
+        continue;
+      }
 
       // Idempotência: processa cada comentário uma vez.
       if (!(await claimEvent(commentId, conn.professional_id))) continue;
@@ -76,6 +81,7 @@ export async function POST(request: Request) {
           matchKeyword(text, (a.keywords as string[]) ?? []) &&
           (!a.post_id || a.post_id === mediaId),
       );
+      console.log(`[IG webhook] comentário "${text}" mediaId=${mediaId} → automação ${auto ? "CASOU" : "não casou"}`);
       if (!auto) continue;
 
       // Link do funil pra mandar no DM.
@@ -102,6 +108,7 @@ export async function POST(request: Request) {
           await replyToComment(commentId, auto.resposta_publica_texto, conn.access_token);
         }
         await sendPrivateReply(igUserId, commentId, dm, conn.access_token);
+        console.log("[IG webhook] resposta pública + DM enviadas ✓");
         const stats = (auto.stats as { comentarios: number; dms: number; leads: number }) ?? {
           comentarios: 0,
           dms: 0,

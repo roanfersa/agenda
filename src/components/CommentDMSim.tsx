@@ -17,17 +17,43 @@ type Comment = {
 
 export function CommentDMSim({ rule, onClose }: { rule: Automation; onClose: () => void }) {
   const funnel = useStore((s) => s.funnel);
+  const professional = useStore((s) => s.professional);
+  const instagram = useStore((s) => s.instagram);
   const captureComment = useStore((s) => s.captureComment);
   const toast = useStore((s) => s.toast);
-  const [comments, setComments] = React.useState<Comment[]>([
-    { user: "ana.luagomes", text: "Que conteúdo lindo 😍" },
-    { user: "pedro.hss", text: "Precisava ouvir isso hoje" },
-  ]);
+  const [comments, setComments] = React.useState<Comment[]>([]);
   const [draft, setDraft] = React.useState("");
   const [dm, setDm] = React.useState<"typing" | "sent" | null>(null);
   const [matched, setMatched] = React.useState(false);
-  const me = "voce.exemplo";
+  const me = "voce.teste";
   const kw = rule.keywords[0];
+
+  // Dados reais: conta conectada + post selecionado na automação.
+  const username = instagram.connected
+    ? instagram.username
+    : (professional.handleInstagram || "").replace(/^@/, "") || "seu.perfil";
+  const [post, setPost] = React.useState<{ thumbnail: string | null; caption: string } | null>(null);
+  React.useEffect(() => {
+    if (!rule.postId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/instagram/media");
+        const data = await res.json();
+        const p = (data.posts as Array<{ id: string; thumbnail: string | null; caption: string }> | undefined)?.find(
+          (x) => x.id === rule.postId,
+        );
+        if (alive && p) setPost({ thumbnail: p.thumbnail, caption: p.caption });
+      } catch {
+        /* ignora */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [rule.postId]);
+  const caption = post?.caption ?? rule.postLegenda;
+  const thumb = post?.thumbnail ?? null;
 
   const send = (txt?: string) => {
     const text = (txt || draft).trim();
@@ -43,7 +69,7 @@ export function CommentDMSim({ rule, onClose }: { rule: Automation; onClose: () 
           () =>
             setComments((c) => [
               ...c,
-              { user: "osvaldo.terapia", text: `@${me} ${rule.respostaPublicaTexto}`, reply: true, pro: true },
+              { user: username, text: `@${me} ${rule.respostaPublicaTexto}`, reply: true, pro: true },
             ]),
           700,
         );
@@ -82,38 +108,33 @@ export function CommentDMSim({ rule, onClose }: { rule: Automation; onClose: () 
           </div>
           <div style={{ border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden", background: "var(--card)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, padding: 12 }}>
-              <Avatar name="Osvaldo Reis" size={32} />
-              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)" }}>osvaldo.terapia</div>
+              <Avatar name={username} size={32} />
+              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)" }}>{username}</div>
               <span style={{ marginLeft: "auto", color: "var(--faint)" }}>
                 <Icon name="dots" size={16} />
               </span>
             </div>
-            <div
-              style={{
-                height: 150,
-                background: "linear-gradient(135deg, #2A5D52, #0E8A6B)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "#fff",
-                gap: 8,
-              }}
-            >
-              <span style={{ fontSize: 44 }}>{rule.postEmoji}</span>
-              <span
+            {thumb ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={thumb}
+                alt=""
+                style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
+              />
+            ) : (
+              <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: 600,
-                  opacity: 0.9,
-                  padding: "0 20px",
-                  textAlign: "center",
-                  lineHeight: 1.3,
+                  height: 180,
+                  background: "linear-gradient(135deg, #2A5D52, #0E8A6B)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "rgba(255,255,255,.85)",
                 }}
               >
-                {rule.postLegenda}
-              </span>
-            </div>
+                <Icon name="instagram" size={40} />
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "11px 13px", color: "var(--ink)" }}>
               <Icon name="heart" size={22} />
               <Icon name="chat" size={21} />
@@ -122,6 +143,21 @@ export function CommentDMSim({ rule, onClose }: { rule: Automation; onClose: () 
                 <Icon name="bookmark" size={21} />
               </span>
             </div>
+            {caption && (
+              <div style={{ padding: "0 13px 10px", fontSize: 13, lineHeight: 1.4, color: "var(--text)" }}>
+                <span style={{ fontWeight: 700, color: "var(--ink)" }}>{username}</span>{" "}
+                <span
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {caption}
+                </span>
+              </div>
+            )}
             <div
               className="no-sb"
               style={{
@@ -267,8 +303,8 @@ export function CommentDMSim({ rule, onClose }: { rule: Automation; onClose: () 
                 borderBottom: "1px solid var(--line)",
               }}
             >
-              <Avatar name="Osvaldo Reis" size={30} />
-              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)" }}>osvaldo.terapia</div>
+              <Avatar name={username} size={30} />
+              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)" }}>{username}</div>
               <span
                 style={{
                   marginLeft: "auto",
