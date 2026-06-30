@@ -121,7 +121,7 @@ export function ConversasScreen() {
     <div style={{ padding: "0 14px" }} className="lg:px-0">
       <div className="lg:grid lg:grid-cols-[300px_1fr] lg:gap-4 lg:h-[600px]">
         {/* Lista de conversas */}
-        <div style={{ display: sel ? "none" : "block", borderRight: "1px solid var(--line)" }} className="lg:!block">
+        <div style={{ display: sel ? "none" : "block", borderRight: "1px solid var(--line)" }} className="lg:!block lg:h-full lg:overflow-y-auto no-sb">
           {loading && !demo && <p style={{ fontSize: 13.5, color: "var(--muted)", padding: 12 }}>Carregando conversas…</p>}
           {!loading && erro && !demo && <p style={{ fontSize: 13.5, color: "var(--danger)", padding: 12 }}>{erro}</p>}
           {!loading && !erro && lista.length === 0 && (
@@ -152,7 +152,7 @@ export function ConversasScreen() {
         </div>
 
         {/* Conversa aberta */}
-        <div style={{ display: !sel ? "none" : "flex", flexDirection: "column", minHeight: 420 }} className={sel ? "lg:!flex" : "lg:!flex"}>
+        <div style={{ display: !sel ? "none" : "flex", flexDirection: "column" }} className="lg:!flex h-[72dvh] lg:h-full">
           {!sel ? (
             <div className="hidden lg:flex" style={{ flex: 1, alignItems: "center", justifyContent: "center", color: "var(--faint)", fontSize: 13.5 }}>
               Selecione uma conversa
@@ -172,7 +172,7 @@ export function ConversasScreen() {
                   const mine = m.fromId === selfId;
                   return (
                     <div key={m.id} style={{ display: "flex", justifyContent: mine ? "flex-end" : "flex-start" }}>
-                      <div style={{ maxWidth: "80%", padding: "9px 13px", borderRadius: 16, fontSize: 14, lineHeight: 1.4, background: mine ? "var(--accent)" : "#fff", color: mine ? "#fff" : "var(--ink)", border: mine ? "none" : "1px solid var(--line)" }}>
+                      <div style={{ maxWidth: "80%", padding: "9px 13px", borderRadius: 16, fontSize: 14, lineHeight: 1.4, background: mine ? "var(--accent)" : "#fff", color: mine ? "#fff" : "var(--ink)", border: mine ? "none" : "1px solid var(--line)", wordBreak: "break-word", overflowWrap: "anywhere" }}>
                         {m.text}
                       </div>
                     </div>
