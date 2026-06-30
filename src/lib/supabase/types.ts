@@ -229,6 +229,15 @@ export type Database = {
         professional_id: string | null;
         processed_at: string;
       }>;
+      google_connections: TableDef<{
+        professional_id: string;
+        email: string;
+        access_token: string;
+        refresh_token: string;
+        token_expires_at: string | null;
+        calendar_id: string;
+        connected_at: string;
+      }>;
     };
     Views: Record<string, never>;
     Functions: { is_internal: { Args: Record<string, never>; Returns: boolean } };

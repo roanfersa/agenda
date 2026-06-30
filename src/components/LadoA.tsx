@@ -803,6 +803,41 @@ function DisponibilidadeEditor() {
   );
 }
 
+/** Conectar/desconectar Google Agenda. */
+function GoogleCalendarCard() {
+  const cal = useStore((s) => s.professional.googleCalendar);
+  const [busy, setBusy] = React.useState(false);
+  const desconectar = async () => {
+    setBusy(true);
+    await fetch("/api/google/disconnect", { method: "POST" });
+    window.location.reload();
+  };
+  return (
+    <Card pad={16}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+        <span style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-050)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon name="google" size={18} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Google Agenda</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {cal.conectado ? `Conectado · ${cal.email}` : "Crie os eventos automaticamente quando o lead marcar"}
+          </div>
+        </div>
+        {cal.conectado ? (
+          <Button size="sm" variant="outline" onClick={desconectar} disabled={busy}>
+            Desconectar
+          </Button>
+        ) : (
+          <a href="/api/google/connect" style={{ textDecoration: "none", flexShrink: 0 }}>
+            <Button size="sm" icon="google">Conectar</Button>
+          </a>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export function AgendaScreen({ openLead }: { openLead: (id: string) => void }) {
   const appointments = useStore((s) => s.appointments);
   const leads = useStore((s) => s.leads);
@@ -815,6 +850,7 @@ export function AgendaScreen({ openLead }: { openLead: (id: string) => void }) {
   return (
     <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 20 }}>
       <DisponibilidadeEditor />
+      <GoogleCalendarCard />
       {!appts.length && (
         <EmptyState
           icon="calendar"

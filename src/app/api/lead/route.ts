@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { summarizeLead } from "@/lib/ai/lead-summary";
+import { getValidGoogleToken } from "@/lib/data/google";
+import { createCalendarEvent, proximaOcorrencia } from "@/lib/integrations/google";
 import type { Resposta } from "@/lib/types";
 
 type Body = {
@@ -83,8 +85,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "falha ao salvar" }, { status: 500 });
   }
 
-  // 4) Agendamento (opcional).
+  // 4) Agendamento (opcional). Cria o evento no Google Agenda, se conectado.
   if (body.agendamento) {
+    let googleEventId: string | null = null;
+    try {
+      const cred = await getValidGoogleToken(funnel.professional_id);
+      const quando = cred ? proximaOcorrencia(body.agendamento.dia, body.agendamento.hora) : null;
+      if (cred && quando) {
+        googleEventId = await createCalendarEvent(cred.token, cred.calendarId, {
+          summary: `${body.agendamento.tipo} — ${body.nome.trim()}`,
+          description: `Agendado pelo Revo${body.whatsapp ? ` · WhatsApp: ${body.whatsapp}` : ""}`,
+          start: quando.start,
+          end: quando.end,
+        });
+      }
+    } catch {
+      // Não bloqueia o agendamento se o Google falhar.
+    }
     await db.from("appointments").insert({
       professional_id: funnel.professional_id,
       lead_id: lead.id,
@@ -94,6 +111,7 @@ export async function POST(request: Request) {
       tipo_atendimento: body.agendamento.tipo,
       modalidade: body.agendamento.modalidade,
       status: "confirmado",
+      google_event_id: googleEventId,
     });
   }
 
