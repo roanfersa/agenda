@@ -8,6 +8,11 @@ import { useStore } from "@/lib/store";
 type Conversa = { id: string; username: string; userId: string; updatedTime: string };
 type Mensagem = { id: string; fromId: string; text: string; createdTime: string };
 
+// Conversa de demonstração (gated por ?demo=1) — para gravação/App Review.
+const DEMO_ID = "demo-leverpeak";
+const DEMO_SELF = "__self__";
+const DEMO_LEAD = "__lead__";
+
 export function ConversasScreen() {
   const instagram = useStore((s) => s.instagram);
   const [conversas, setConversas] = React.useState<Conversa[]>([]);
@@ -18,6 +23,22 @@ export function ConversasScreen() {
   const [erro, setErro] = React.useState<string | null>(null);
   const [text, setText] = React.useState("");
   const [sending, setSending] = React.useState(false);
+  const [demo, setDemo] = React.useState(false);
+
+  React.useEffect(() => {
+    setDemo(new URLSearchParams(window.location.search).get("demo") === "1");
+  }, []);
+
+  const demoConversa: Conversa = { id: DEMO_ID, username: "leverpeak", userId: DEMO_LEAD, updatedTime: new Date().toISOString() };
+  const demoMensagens: Mensagem[] = [
+    { id: "d1", fromId: DEMO_SELF, text: "Oi! Que bom que você comentou 🌿 Aqui é o link pra você responder 2 perguntinhas e já marcar comigo: getrevo.com.br/f/sua-jornada", createdTime: "" },
+    { id: "d2", fromId: DEMO_LEAD, text: "Oi! Acabei de responder o formulário. Consigo um horário ainda essa semana?", createdTime: "" },
+    { id: "d3", fromId: DEMO_SELF, text: "Claro! Tenho quinta às 14h ou sexta às 10h. Qual fica melhor pra você?", createdTime: "" },
+    { id: "d4", fromId: DEMO_LEAD, text: "Quinta 14h tá ótimo 🙌", createdTime: "" },
+    { id: "d5", fromId: DEMO_SELF, text: "Fechado! Já te confirmo por aqui e te mando o endereço. Até quinta 💚", createdTime: "" },
+  ];
+
+  const lista = demo ? [demoConversa, ...conversas] : conversas;
 
   React.useEffect(() => {
     (async () => {
@@ -39,6 +60,11 @@ export function ConversasScreen() {
   const abrir = async (c: Conversa) => {
     setSel(c);
     setMensagens([]);
+    if (c.id === DEMO_ID) {
+      setSelfId(DEMO_SELF);
+      setMensagens(demoMensagens);
+      return;
+    }
     try {
       const res = await fetch(`/api/instagram/messages?conversationId=${encodeURIComponent(c.id)}`);
       const data = await res.json();
@@ -53,8 +79,13 @@ export function ConversasScreen() {
 
   const enviar = async () => {
     if (!sel || !text.trim() || sending) return;
-    setSending(true);
     const txt = text.trim();
+    if (sel.id === DEMO_ID) {
+      setMensagens((m) => [...m, { id: "d" + m.length, fromId: DEMO_SELF, text: txt, createdTime: "" }]);
+      setText("");
+      return;
+    }
+    setSending(true);
     try {
       const res = await fetch("/api/instagram/reply", {
         method: "POST",
@@ -91,12 +122,12 @@ export function ConversasScreen() {
       <div className="lg:grid lg:grid-cols-[300px_1fr] lg:gap-4 lg:h-[600px]">
         {/* Lista de conversas */}
         <div style={{ display: sel ? "none" : "block", borderRight: "1px solid var(--line)" }} className="lg:!block">
-          {loading && <p style={{ fontSize: 13.5, color: "var(--muted)", padding: 12 }}>Carregando conversas…</p>}
-          {!loading && erro && <p style={{ fontSize: 13.5, color: "var(--danger)", padding: 12 }}>{erro}</p>}
-          {!loading && !erro && conversas.length === 0 && (
+          {loading && !demo && <p style={{ fontSize: 13.5, color: "var(--muted)", padding: 12 }}>Carregando conversas…</p>}
+          {!loading && erro && !demo && <p style={{ fontSize: 13.5, color: "var(--danger)", padding: 12 }}>{erro}</p>}
+          {!loading && !erro && lista.length === 0 && (
             <p style={{ fontSize: 13.5, color: "var(--muted)", padding: 12 }}>Nenhuma conversa ainda.</p>
           )}
-          {conversas.map((c) => (
+          {lista.map((c) => (
             <button
               key={c.id}
               onClick={() => abrir(c)}
