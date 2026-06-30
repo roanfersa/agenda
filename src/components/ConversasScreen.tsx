@@ -119,9 +119,9 @@ export function ConversasScreen() {
 
   return (
     <div style={{ padding: "0 14px" }} className="lg:px-0">
-      <div className="lg:grid lg:grid-cols-[300px_1fr] lg:gap-4 lg:h-[600px]">
+      <div className="lg:grid lg:grid-cols-[300px_1fr] lg:gap-4">
         {/* Lista de conversas */}
-        <div style={{ display: sel ? "none" : "block", borderRight: "1px solid var(--line)" }} className="lg:!block lg:h-full lg:overflow-y-auto no-sb">
+        <div style={{ display: sel ? "none" : "block", borderRight: "1px solid var(--line)" }} className="lg:!block lg:h-[78vh] lg:overflow-y-auto no-sb">
           {loading && !demo && <p style={{ fontSize: 13.5, color: "var(--muted)", padding: 12 }}>Carregando conversas…</p>}
           {!loading && erro && !demo && <p style={{ fontSize: 13.5, color: "var(--danger)", padding: 12 }}>{erro}</p>}
           {!loading && !erro && lista.length === 0 && (
@@ -152,7 +152,7 @@ export function ConversasScreen() {
         </div>
 
         {/* Conversa aberta */}
-        <div style={{ display: !sel ? "none" : "flex", flexDirection: "column" }} className="lg:!flex h-[72dvh] lg:h-full">
+        <div style={{ display: !sel ? "none" : "flex", flexDirection: "column" }} className="lg:!flex h-[72dvh] lg:h-[78vh]">
           {!sel ? (
             <div className="hidden lg:flex" style={{ flex: 1, alignItems: "center", justifyContent: "center", color: "var(--faint)", fontSize: 13.5 }}>
               Selecione uma conversa
@@ -167,7 +167,7 @@ export function ConversasScreen() {
                   ATENDIMENTO HUMANO
                 </span>
               </div>
-              <div className="no-sb" style={{ flex: 1, overflowY: "auto", padding: "12px 4px", display: "flex", flexDirection: "column", gap: 8, minHeight: 280 }}>
+              <div className="no-sb" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "12px 4px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {mensagens.map((m) => {
                   const mine = m.fromId === selfId;
                   return (
