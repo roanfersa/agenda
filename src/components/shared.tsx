@@ -13,6 +13,23 @@ import {
   STATUS,
 } from "./ui";
 
+/** Formata uma data (ISO do banco) de forma amigável em pt-BR.
+ *  Se já vier como texto amigável (ex.: "Agora mesmo"), devolve como está. */
+export function dataCurta(valor: string): string {
+  if (!valor) return "";
+  const d = new Date(valor);
+  if (isNaN(d.getTime())) return valor;
+  const agora = new Date();
+  const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const mesmoDia = d.toDateString() === agora.toDateString();
+  const ontem = new Date(agora);
+  ontem.setDate(agora.getDate() - 1);
+  if (mesmoDia) return `hoje, ${hora}`;
+  if (d.toDateString() === ontem.toDateString()) return `ontem, ${hora}`;
+  const mesmoAno = d.getFullYear() === agora.getFullYear();
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", ...(mesmoAno ? {} : { year: "numeric" }) });
+}
+
 /* ---- Logo ---------------------------------------------------------------- */
 export function Logo({ size = 28, light }: { size?: number; light?: boolean }) {
   return (

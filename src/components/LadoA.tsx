@@ -11,7 +11,7 @@ import {
   Field,
   SectionLabel,
 } from "./ui";
-import { BioLinkCard, Toggle, Logo } from "./shared";
+import { BioLinkCard, Toggle, Logo, dataCurta } from "./shared";
 import { fmtWhats, useStore, waLink } from "@/lib/store";
 import { hasFeature } from "@/lib/features";
 import type { Lead } from "@/lib/types";
@@ -268,7 +268,7 @@ export function LeadRow({ lead, onClick }: { lead: Lead; onClick?: () => void })
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
         <Badge status={lead.status} />
         <span style={{ fontSize: 11.5, color: "var(--faint)", fontWeight: 600 }}>
-          {lead.criadoEm.replace("Agora mesmo", "agora").replace(",", "")}
+          {dataCurta(lead.criadoEm)}
         </span>
       </div>
     </button>

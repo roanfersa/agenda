@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Icon, type IconName } from "./Icon";
 import { Avatar, Badge, Button, EmptyState, Field, SectionLabel } from "./ui";
-import { DeskCard, Logo, PageHead, Td, Th, ConfirmModal } from "./shared";
+import { DeskCard, Logo, PageHead, Td, Th, ConfirmModal, dataCurta } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
 import { useAdminData } from "@/hooks/useAdminData";
 import { FEATURES, resolveFeatures, PLAN_DEFAULTS } from "@/lib/features";
@@ -726,7 +726,7 @@ export function Profissionais() {
                     )}
                   </Td>
                   <Td style={{ textAlign: "right", fontWeight: 700, color: "var(--ink)" }}>{r.leads}</Td>
-                  <Td style={{ color: "var(--muted)", fontSize: 13 }}>{r.criadoEm}</Td>
+                  <Td style={{ color: "var(--muted)", fontSize: 13 }}>{dataCurta(r.criadoEm)}</Td>
                   <Td style={{ textAlign: "right", color: "var(--faint)" }}>
                     <Icon name="chevRight" size={17} />
                   </Td>
@@ -905,7 +905,7 @@ export function DetalheConta({ proId }: { proId: string }) {
           </div>
           <div style={{ fontSize: 14, color: "var(--muted)", marginTop: 4 }}>
             {pro.especialidade} ·{" "}
-            <span style={{ color: "var(--accent)", fontWeight: 600 }}>{pro.handleInstagram}</span> · desde {pro.criadoEm}
+            <span style={{ color: "var(--accent)", fontWeight: 600 }}>{pro.handleInstagram}</span> · desde {dataCurta(pro.criadoEm)}
           </div>
         </div>
       </div>
