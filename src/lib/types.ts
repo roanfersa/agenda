@@ -116,6 +116,8 @@ export type Professional = {
   cor: string;
   whatsapp: string;
   googleCalendar: { conectado: boolean; email: string; calendarId: string };
+  /** Link do Calendly (se preenchido, o funil usa o Calendly no lugar da agenda nativa). */
+  calendlyUrl: string;
   plano: Plano;
   avisos: { email: boolean; push: boolean };
   consentimentoTextoPadrao: string;

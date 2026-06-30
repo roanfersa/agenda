@@ -34,6 +34,7 @@ export const toProfessional = (r: ProfessionalRow): Professional => ({
   cor: r.cor,
   whatsapp: r.whatsapp,
   googleCalendar: r.google_calendar,
+  calendlyUrl: r.calendly_url ?? "",
   plano: r.plano,
   avisos: r.avisos,
   consentimentoTextoPadrao: r.consentimento_texto_padrao,
@@ -54,6 +55,7 @@ export const fromProfessional = (
   ...(p.cor !== undefined && { cor: p.cor }),
   ...(p.whatsapp !== undefined && { whatsapp: p.whatsapp }),
   ...(p.googleCalendar !== undefined && { google_calendar: p.googleCalendar }),
+  ...(p.calendlyUrl !== undefined && { calendly_url: p.calendlyUrl }),
   ...(p.plano !== undefined && { plano: p.plano }),
   ...(p.avisos !== undefined && { avisos: p.avisos }),
   ...(p.consentimentoTextoPadrao !== undefined && {

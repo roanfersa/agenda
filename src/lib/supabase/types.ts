@@ -35,6 +35,7 @@ export type ProfessionalRow = {
   cor: string;
   whatsapp: string;
   google_calendar: { conectado: boolean; email: string; calendarId: string };
+  calendly_url: string;
   plano: Plano;
   avisos: { email: boolean; push: boolean };
   consentimento_texto_padrao: string;

@@ -112,6 +112,7 @@ const emptyProfessional: Professional = {
   cor: "#0E8A6B",
   whatsapp: "",
   googleCalendar: { conectado: false, email: "", calendarId: "" },
+  calendlyUrl: "",
   plano: "entrada",
   avisos: { email: true, push: true },
   consentimentoTextoPadrao: "",

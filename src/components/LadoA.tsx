@@ -838,6 +838,51 @@ function GoogleCalendarCard() {
   );
 }
 
+/** Configurar o link do Calendly (alternativa à agenda nativa). */
+function CalendlyCard() {
+  const calendlyUrl = useStore((s) => s.professional.calendlyUrl);
+  const updateProfessional = useStore((s) => s.updateProfessional);
+  const [url, setUrl] = React.useState(calendlyUrl);
+  const dirty = url.trim() !== calendlyUrl;
+  return (
+    <Card pad={16}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 12 }}>
+        <span style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-050)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Icon name="link" size={18} />
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Calendly</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)" }}>
+            {calendlyUrl ? "Em uso — o funil mostra seu Calendly" : "Cole seu link e o funil agenda pelo Calendly"}
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://calendly.com/voce/30min"
+          style={{ flex: 1, border: "1.5px solid var(--line)", borderRadius: 10, padding: "9px 12px", fontSize: 14, fontFamily: "var(--font)", color: "var(--ink)" }}
+        />
+        <Button size="sm" disabled={!dirty} onClick={() => updateProfessional({ calendlyUrl: url.trim() })} icon="check">
+          Salvar
+        </Button>
+      </div>
+      {calendlyUrl && (
+        <button
+          onClick={() => {
+            setUrl("");
+            updateProfessional({ calendlyUrl: "" });
+          }}
+          style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)", fontWeight: 600 }}
+        >
+          Remover e voltar à agenda nativa
+        </button>
+      )}
+    </Card>
+  );
+}
+
 export function AgendaScreen({ openLead }: { openLead: (id: string) => void }) {
   const appointments = useStore((s) => s.appointments);
   const leads = useStore((s) => s.leads);
@@ -851,6 +896,7 @@ export function AgendaScreen({ openLead }: { openLead: (id: string) => void }) {
     <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 20 }}>
       <DisponibilidadeEditor />
       <GoogleCalendarCard />
+      <CalendlyCard />
       {!appts.length && (
         <EmptyState
           icon="calendar"

@@ -15,6 +15,45 @@ type Reply = {
   recomendacao?: { tipo: "agendar" | "link" | "whatsapp"; label: string; url?: string; motivo?: string };
 };
 
+/** Embute o Calendly inline (sem redirecionar) dentro do funil. */
+function CalendlyEmbed({ url }: { url: string }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    const init = () => {
+      const C = (window as unknown as {
+        Calendly?: { initInlineWidget: (o: { url: string; parentElement: HTMLElement }) => void };
+      }).Calendly;
+      if (C && ref.current && !cancelled) {
+        ref.current.innerHTML = "";
+        C.initInlineWidget({ url, parentElement: ref.current });
+      }
+    };
+    if (!document.getElementById("calendly-css")) {
+      const l = document.createElement("link");
+      l.id = "calendly-css";
+      l.rel = "stylesheet";
+      l.href = "https://assets.calendly.com/assets/external/widget.css";
+      document.head.appendChild(l);
+    }
+    const existing = document.getElementById("calendly-js") as HTMLScriptElement | null;
+    if ((window as unknown as { Calendly?: unknown }).Calendly) init();
+    else if (existing) existing.addEventListener("load", init);
+    else {
+      const s = document.createElement("script");
+      s.id = "calendly-js";
+      s.src = "https://assets.calendly.com/assets/external/widget.js";
+      s.async = true;
+      s.onload = init;
+      document.body.appendChild(s);
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+  return <div ref={ref} style={{ minWidth: 280, height: 600, borderRadius: 16, overflow: "hidden" }} />;
+}
+
 /**
  * Funil conversacional com IA: a IA qualifica o visitante e recomenda o próximo
  * passo (agendar no chat, abrir um link de produto ou seguir no WhatsApp).
@@ -186,7 +225,10 @@ export function AiFunnelChat({
           )}
 
           {/* Seleção de horário (recomendação = agendar) */}
-          {stage === "agenda" && (
+          {stage === "agenda" && professional.calendlyUrl && (
+            <CalendlyEmbed url={professional.calendlyUrl} />
+          )}
+          {stage === "agenda" && !professional.calendlyUrl && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {disponibilidade.map((d) => (
                 <div key={d.id}>
