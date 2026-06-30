@@ -439,6 +439,7 @@ export function FunisList({ onEdit, onNew }: { onEdit: (id: string) => void; onN
 export function AutomacoesScreen() {
   const automations = useStore((s) => s.automations);
   const toggleAutomation = useStore((s) => s.toggleAutomation);
+  const deleteAutomation = useStore((s) => s.deleteAutomation);
   const professional = useStore((s) => s.professional);
   const instagram = useStore((s) => s.instagram);
   const toast = useStore((s) => s.toast);
@@ -673,6 +674,18 @@ export function AutomacoesScreen() {
               </Button>
               <Button size="sm" variant="outline" icon="edit" onClick={() => setEditing(r)}>
                 Editar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  if (confirm("Excluir esta automação? Essa ação não pode ser desfeita.")) {
+                    deleteAutomation(r.id);
+                    toast("Automação excluída.");
+                  }
+                }}
+              >
+                <Icon name="trash" size={16} />
               </Button>
             </div>
           </Card>

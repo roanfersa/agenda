@@ -35,6 +35,7 @@ import { updateLeadAction, markLeadReadAction, markNotifsReadAction } from "./ac
 import {
   saveAutomationAction,
   toggleAutomationAction,
+  deleteAutomationAction,
 } from "./actions/automations";
 import {
   updateProfessionalAction,
@@ -190,6 +191,7 @@ type Actions = {
   markNotifsRead: () => void;
   toggleAviso: (key: "email" | "push") => void;
   toggleAutomation: (id: string) => void;
+  deleteAutomation: (id: string) => void;
   saveAutomation: (rule: Automation) => void;
   captureComment: (autoId: string) => void;
   updateFunnel: (patch: Partial<Funnel>) => void;
@@ -350,6 +352,11 @@ export const useStore = create<State & Actions>()((set, get) => ({
     const ativa = !cur?.ativa;
     set((s) => ({ automations: s.automations.map((a) => (a.id === id ? { ...a, ativa } : a)) }));
     persist(toggleAutomationAction(id, ativa), get().toast);
+  },
+
+  deleteAutomation: (id) => {
+    set((s) => ({ automations: s.automations.filter((a) => a.id !== id) }));
+    persist(deleteAutomationAction(id), get().toast);
   },
 
   saveAutomation: (rule) => {

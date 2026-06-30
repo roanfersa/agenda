@@ -29,6 +29,17 @@ export async function saveAutomationAction(rule: Automation, isNew: boolean) {
   return { error: error?.message ?? null };
 }
 
+export async function deleteAutomationAction(id: string) {
+  const { supabase, userId } = await owner();
+  if (!userId) return { error: "unauthenticated" };
+  const { error } = await supabase
+    .from("automations")
+    .delete()
+    .eq("id", id)
+    .eq("professional_id", userId);
+  return { error: error?.message ?? null };
+}
+
 export async function toggleAutomationAction(id: string, ativa: boolean) {
   const { supabase, userId } = await owner();
   if (!userId) return { error: "unauthenticated" };
