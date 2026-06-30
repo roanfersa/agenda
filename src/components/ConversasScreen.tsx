@@ -5,7 +5,7 @@ import { Avatar, Button, EmptyState } from "./ui";
 import { Icon } from "./Icon";
 import { useStore } from "@/lib/store";
 
-type Conversa = { id: string; username: string; userId: string; updatedTime: string };
+type Conversa = { id: string; username: string; userId: string; updatedTime: string; avatarUrl?: string };
 type Mensagem = { id: string; fromId: string; text: string; createdTime: string };
 
 // Conversa de demonstração (gated por ?demo=1) — para gravação/App Review.
@@ -142,7 +142,7 @@ export function ConversasScreen() {
                 background: sel?.id === c.id ? "var(--accent-050)" : "transparent",
               }}
             >
-              <Avatar name={c.username || "?"} size={40} bg="var(--accent-100)" fg="var(--accent-800)" />
+              <Avatar name={c.username || "?"} src={c.avatarUrl} size={40} bg="var(--accent-100)" fg="var(--accent-800)" />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>@{c.username || "usuário"}</div>
                 <div style={{ fontSize: 12, color: "var(--faint)" }}>{new Date(c.updatedTime).toLocaleDateString("pt-BR")}</div>
@@ -161,7 +161,7 @@ export function ConversasScreen() {
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 4px", borderBottom: "1px solid var(--line)" }}>
                 <button onClick={() => setSel(null)} className="lg:hidden" style={{ color: "var(--muted)" }}><Icon name="arrowLeft" size={18} /></button>
-                <Avatar name={sel.username || "?"} size={34} bg="var(--accent-100)" fg="var(--accent-800)" />
+                <Avatar name={sel.username || "?"} src={sel.avatarUrl} size={34} bg="var(--accent-100)" fg="var(--accent-800)" />
                 <div style={{ fontWeight: 700, fontSize: 14.5 }}>@{sel.username || "usuário"}</div>
                 <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 800, background: "var(--accent-050)", color: "var(--accent-800)", padding: "3px 7px", borderRadius: 6 }}>
                   ATENDIMENTO HUMANO

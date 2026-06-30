@@ -149,19 +149,35 @@ async function gget<T>(url: string): Promise<T> {
   return data as T;
 }
 
-export type IgConversation = { id: string; username: string; userId: string; updatedTime: string };
+export type IgConversation = { id: string; username: string; userId: string; updatedTime: string; avatarUrl?: string };
 export type IgMessage = { id: string; fromId: string; text: string; createdTime: string };
+
+/** Foto de perfil de um contato (User Profile API). Vazio se indisponível. */
+async function getProfilePic(userId: string, token: string): Promise<string> {
+  try {
+    const d = await gget<{ profile_pic?: string }>(
+      `${GRAPH}/${VERSION}/${userId}?fields=profile_pic&access_token=${token}`,
+    );
+    return d.profile_pic ?? "";
+  } catch {
+    return "";
+  }
+}
 
 /** Lista as conversas de DM da conta. selfId = id da conta conectada. */
 export async function getConversations(token: string, selfId: string): Promise<IgConversation[]> {
   const data = await gget<{
     data?: Array<{ id: string; updated_time: string; participants?: { data: Array<{ id: string; username?: string }> } }>;
   }>(`${GRAPH}/${VERSION}/me/conversations?platform=instagram&fields=id,updated_time,participants{id,username}&access_token=${token}`);
-  return (data.data ?? []).map((c) => {
+  const base = (data.data ?? []).map((c) => {
     const ps = c.participants?.data ?? [];
     const other = ps.find((p) => p.id !== selfId) ?? ps[0];
     return { id: c.id, username: other?.username ?? "", userId: other?.id ?? "", updatedTime: c.updated_time };
   });
+  // Busca a foto de cada contato em paralelo.
+  return Promise.all(
+    base.map(async (c) => ({ ...c, avatarUrl: c.userId ? await getProfilePic(c.userId, token) : "" })),
+  );
 }
 
 /** Mensagens de uma conversa (ordem cronológica). */
