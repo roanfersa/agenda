@@ -64,10 +64,12 @@ export function LoginScreen({
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
       const next = tab === "entrar" ? "/inicio" : "/onboarding?novo=1";
+      // Em produção usa o domínio oficial (evita voltar pra localhost se a aba tiver outro origin).
+      const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          redirectTo: `${base}/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
     } catch {
