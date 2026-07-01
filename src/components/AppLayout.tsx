@@ -12,7 +12,6 @@ import { useHasHydrated } from "@/hooks/useHasHydrated";
 export type AppScreen =
   | "inicio"
   | "leads"
-  | "analises"
   | "agenda"
   | "funis"
   | "funil"
@@ -27,7 +26,6 @@ type Item = { id: AppScreen; href: string; label: string; icon: IconName };
 const ITEMS: Item[] = [
   { id: "inicio", href: "/inicio", label: "Início", icon: "home" },
   { id: "leads", href: "/leads", label: "Leads", icon: "users" },
-  { id: "analises", href: "/analises", label: "Análises", icon: "target" },
   { id: "agenda", href: "/agenda", label: "Agenda", icon: "calendar" },
   { id: "funis", href: "/funis", label: "Funis", icon: "funnel" },
   { id: "recursos", href: "/recursos", label: "Recursos", icon: "link" },

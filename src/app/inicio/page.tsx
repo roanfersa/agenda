@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Dashboard } from "@/components/LadoA";
+import { AnalisesScreen } from "@/components/AnalisesScreen";
 import { AppLayout } from "@/components/AppLayout";
 import { NotificationsSheet } from "@/components/NotificationsSheet";
 import { RoundBtn } from "@/components/ui";
@@ -24,6 +25,9 @@ export default function InicioPage() {
       }
     >
       <Dashboard openLead={(id) => router.push(`/leads/${id}`)} go={(s) => router.push(`/${s}`)} />
+      <div style={{ marginTop: 22 }}>
+        <AnalisesScreen />
+      </div>
       {notifOpen && (
         <NotificationsSheet
           onClose={() => setNotifOpen(false)}
