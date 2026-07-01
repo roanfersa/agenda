@@ -19,6 +19,8 @@ type Body = {
     modalidade: "online" | "presencial";
   } | null;
   origem?: "instagram" | "link";
+  recursoId?: string;
+  fonte?: string;
 };
 
 export async function POST(request: Request) {
@@ -77,6 +79,8 @@ export async function POST(request: Request) {
       status,
       consentimento: { dado: true, dataHora: agora },
       origem: body.origem ?? "link",
+      recurso_id: body.recursoId ?? null,
+      fonte: body.fonte ?? "",
       novo: true,
     })
     .select("id")

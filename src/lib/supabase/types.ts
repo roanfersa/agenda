@@ -84,7 +84,20 @@ export type LeadRow = {
   status: LeadStatus;
   consentimento: { dado: boolean; dataHora: string };
   origem: "instagram" | "link";
+  recurso_id: string | null;
+  fonte: string;
   novo: boolean;
+  criado_em: string;
+};
+
+export type EventRow = {
+  id: string;
+  professional_id: string;
+  funnel_id: string | null;
+  recurso_id: string | null;
+  tipo: string;
+  fonte: string;
+  dados: Jsonb;
   criado_em: string;
 };
 
@@ -188,6 +201,7 @@ export type Database = {
       professionals: TableDef<ProfessionalRow>;
       funnels: TableDef<FunnelRow>;
       leads: TableDef<LeadRow>;
+      events: TableDef<EventRow>;
       appointments: TableDef<AppointmentRow>;
       availability: TableDef<AvailabilityRow>;
       automations: TableDef<AutomationRow>;

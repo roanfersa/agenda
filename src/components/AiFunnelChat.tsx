@@ -4,6 +4,7 @@ import * as React from "react";
 import { Avatar, Button, Field, TypingDots } from "./ui";
 import { Icon } from "./Icon";
 import { waLink } from "@/lib/store";
+import { track } from "@/lib/track";
 import { DEFAULT_THEME, type Disponibilidade, type Funnel, type Professional, type Resposta } from "@/lib/types";
 import type { PublicLeadInput } from "./LadoB";
 
@@ -12,7 +13,7 @@ type Reply = {
   mensagem: string;
   opcoes?: string[];
   fase: "perguntando" | "recomendar";
-  recomendacao?: { tipo: "agendar" | "link" | "whatsapp"; label: string; url?: string; motivo?: string };
+  recomendacao?: { tipo: "agendar" | "link" | "whatsapp"; label: string; url?: string; motivo?: string; recursoId?: string };
 };
 
 /** Embute o Calendly inline (sem redirecionar) dentro do funil. */
@@ -64,12 +65,14 @@ export function AiFunnelChat({
   disponibilidade,
   onSubmitLead,
   preview = false,
+  fonte,
 }: {
   funnel: Funnel;
   professional: Professional;
   disponibilidade: Disponibilidade[];
   onSubmitLead?: (input: PublicLeadInput) => void | Promise<void>;
   preview?: boolean;
+  fonte?: string;
 }) {
   const theme = { ...DEFAULT_THEME, ...(funnel.theme || {}) };
   const [turns, setTurns] = React.useState<ChatTurn[]>([]);
@@ -108,6 +111,7 @@ export function AiFunnelChat({
         setTurns((t) => [...t, { role: "bot", text: data.mensagem }]);
         if (data.fase === "recomendar") {
           setRec(data.recomendacao ?? null);
+          if (!preview) track("recommend", { slug: funnel.slug, recursoId: data.recomendacao?.recursoId, fonte });
           // agendar abre seleção de horário; demais vão direto pro contato.
           setStage(data.recomendacao?.tipo === "agendar" && disponibilidade.length > 0 ? "agenda" : "contato");
         } else {
@@ -119,7 +123,7 @@ export function AiFunnelChat({
         setTyping(false);
       }
     },
-    [funnel.slug, preview, disponibilidade.length],
+    [funnel.slug, preview, disponibilidade.length, fonte],
   );
 
   React.useEffect(() => {
@@ -164,6 +168,8 @@ export function AiFunnelChat({
       origem: "link",
       funnelId: funnel.id,
       slug: funnel.slug,
+      recursoId: rec?.recursoId,
+      fonte,
     };
     await onSubmitLead?.(input);
     setStage("done");

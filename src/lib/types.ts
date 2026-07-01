@@ -168,6 +168,8 @@ export type Lead = {
   status: LeadStatus;
   consentimento: { dado: boolean; dataHora: string };
   origem: "instagram" | "link";
+  recursoId?: string;
+  fonte?: string;
   criadoEm: string;
   _t: number;
   _novo?: boolean;

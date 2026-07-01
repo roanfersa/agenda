@@ -12,6 +12,7 @@ import { useHasHydrated } from "@/hooks/useHasHydrated";
 export type AppScreen =
   | "inicio"
   | "leads"
+  | "analises"
   | "agenda"
   | "funis"
   | "funil"
@@ -26,14 +27,18 @@ type Item = { id: AppScreen; href: string; label: string; icon: IconName };
 const ITEMS: Item[] = [
   { id: "inicio", href: "/inicio", label: "Início", icon: "home" },
   { id: "leads", href: "/leads", label: "Leads", icon: "users" },
+  { id: "analises", href: "/analises", label: "Análises", icon: "target" },
   { id: "agenda", href: "/agenda", label: "Agenda", icon: "calendar" },
   { id: "funis", href: "/funis", label: "Funis", icon: "funnel" },
   { id: "recursos", href: "/recursos", label: "Recursos", icon: "link" },
   { id: "automacoes", href: "/automacoes", label: "Automações", icon: "instagram" },
   { id: "conversas", href: "/conversas", label: "Conversas", icon: "chat" },
   { id: "planos", href: "/planos", label: "Planos", icon: "bolt" },
-  { id: "config", href: "/config", label: "Ajustes", icon: "settings" },
 ];
+
+// Item de fallback para "config" — não fica na nav lateral, mas continua
+// alcançável no mobile e como destino do card de perfil.
+const CONFIG_ITEM: Item = { id: "config", href: "/config", label: "Ajustes", icon: "settings" };
 
 const MOBILE_TABS: AppScreen[] = ["inicio", "leads", "agenda", "config"];
 
@@ -150,7 +155,8 @@ export function AppLayout({
         <div style={{ marginTop: 16 }}>
           <BioLinkCard slug={funnel.slug} onToast={toast} />
         </div>
-        <div
+        <Link
+          href="/config"
           style={{
             marginTop: "auto",
             padding: 10,
@@ -159,7 +165,11 @@ export function AppLayout({
             alignItems: "center",
             gap: 10,
             border: "1px solid var(--line)",
+            cursor: "pointer",
+            background: screen === "config" ? "var(--accent-050)" : "transparent",
+            transition: "background .14s",
           }}
+          className="profile-card-link"
         >
           <Avatar name={professional.nome} size={34} />
           <div style={{ minWidth: 0, flex: 1 }}>
@@ -179,7 +189,8 @@ export function AppLayout({
               Plano {professional.plano === "pro" ? "Pro" : professional.plano === "setup" ? "Setup" : "Entrada"}
             </div>
           </div>
-        </div>
+          <Icon name="settings" size={17} sw={1.8} style={{ color: "var(--muted)", flexShrink: 0 }} />
+        </Link>
       </aside>
 
       {/* Main column */}
@@ -299,7 +310,7 @@ export function AppLayout({
           }}
         >
           {MOBILE_TABS.map((tab) => {
-            const item = ITEMS.find((i) => i.id === tab)!;
+            const item = ITEMS.find((i) => i.id === tab) ?? CONFIG_ITEM;
             const on = screen === tab;
             return (
               <button

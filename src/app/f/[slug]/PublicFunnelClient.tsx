@@ -1,8 +1,10 @@
 "use client";
 
+import * as React from "react";
 import { LadoB, type PublicLeadInput } from "@/components/LadoB";
 import { AiFunnelChat } from "@/components/AiFunnelChat";
 import { ToastHost } from "@/components/ui";
+import { track } from "@/lib/track";
 import type { Disponibilidade, Funnel, Objetivo, Professional } from "@/lib/types";
 
 export function PublicFunnelClient({
@@ -20,6 +22,16 @@ export function PublicFunnelClient({
   preview?: boolean;
   aiEnabled?: boolean;
 }) {
+  const [fonte, setFonte] = React.useState("");
+
+  React.useEffect(() => {
+    if (preview) return;
+    const f = new URLSearchParams(window.location.search).get("fonte") || "";
+    setFonte(f);
+    track("view", { slug: funnel.slug, fonte: f });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onSubmitLead = async (input: PublicLeadInput) => {
     if (preview) return; // rascunho: não cria lead real
     try {
@@ -34,6 +46,8 @@ export function PublicFunnelClient({
           respostas: input.respostas,
           agendamento: input.agendamento,
           origem: input.origem,
+          recursoId: input.recursoId,
+          fonte: input.fonte ?? fonte,
         }),
       });
     } catch {
@@ -50,6 +64,7 @@ export function PublicFunnelClient({
           disponibilidade={disponibilidade}
           onSubmitLead={onSubmitLead}
           preview={preview}
+          fonte={fonte}
         />
       ) : (
         <LadoB
@@ -58,6 +73,7 @@ export function PublicFunnelClient({
           disponibilidadeOverride={disponibilidade}
           objOverride={objOverride}
           onSubmitLead={onSubmitLead}
+          fonte={fonte}
           key={`${funnel.slug}-${objOverride || "default"}`}
         />
       )}

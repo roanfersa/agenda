@@ -5,6 +5,7 @@ import { Icon } from "./Icon";
 import { Avatar, Button, Field, TypingDots } from "./ui";
 import { AiFunnelChat } from "./AiFunnelChat";
 import { fmtWhats, OBJ, useStore, waLink } from "@/lib/store";
+import { track } from "@/lib/track";
 import { DEFAULT_THEME, type Disponibilidade, type Funnel, type FunnelBlock, type Objetivo, type Professional, type Recurso, type Resposta } from "@/lib/types";
 
 export type PublicLeadInput = {
@@ -23,6 +24,8 @@ export type PublicLeadInput = {
   origem: "instagram" | "link";
   funnelId: string;
   slug: string;
+  recursoId?: string;
+  fonte?: string;
 };
 
 type Stage =
@@ -425,8 +428,8 @@ function PrivacySheet({
 }
 
 /* ---- Blocos estilo Linktree (renderizados no fim do fluxo) -------------- */
-function BlocksSection({ blocks, recursos, whatsapp, onRecomendador }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string; onRecomendador?: () => void }) {
-  const card = (children: React.ReactNode, href?: string, key?: string) => {
+function BlocksSection({ blocks, recursos, whatsapp, onRecomendador, slug, fonte }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string; onRecomendador?: () => void; slug?: string; fonte?: string }) {
+  const card = (children: React.ReactNode, href?: string, key?: string, onClick?: () => void) => {
     const inner = (
       <div
         style={{
@@ -444,7 +447,7 @@ function BlocksSection({ blocks, recursos, whatsapp, onRecomendador }: { blocks:
       </div>
     );
     return href ? (
-      <a key={key} href={href} target="_blank" rel="noopener" style={{ textDecoration: "none", color: "inherit" }}>
+      <a key={key} href={href} target="_blank" rel="noopener" onClick={onClick} style={{ textDecoration: "none", color: "inherit" }}>
         {inner}
       </a>
     ) : (
@@ -471,6 +474,7 @@ function BlocksSection({ blocks, recursos, whatsapp, onRecomendador }: { blocks:
             </>,
             href,
             "rec-" + (r.id ?? r.nome),
+            slug ? () => track("click", { slug, recursoId: r.id, fonte }) : undefined,
           );
         })}
       {blocks.map((b) => {
@@ -553,12 +557,14 @@ export function LadoB({
   professionalOverride,
   disponibilidadeOverride,
   onSubmitLead,
+  fonte,
 }: {
   objOverride?: Objetivo;
   funnelOverride?: Funnel;
   professionalOverride?: Professional;
   disponibilidadeOverride?: Disponibilidade[];
   onSubmitLead?: (input: PublicLeadInput) => void | Promise<void>;
+  fonte?: string;
 }) {
   const storeFunnel = useStore((s) => s.funnel);
   const storeProfessional = useStore((s) => s.professional);
@@ -787,6 +793,7 @@ export function LadoB({
       agendamento,
       origem: "instagram" as const,
       funnelId: funnel.id,
+      fonte,
     };
     if (onSubmitLead) {
       // Funil público: persiste no servidor (service role + resumo IA real).
@@ -1014,7 +1021,7 @@ export function LadoB({
           <Icon name="arrowLeft" size={16} /> Voltar
         </button>
         <div style={{ flex: 1, minHeight: 0 }}>
-          <AiFunnelChat funnel={funnel} professional={professional} disponibilidade={disponibilidade} onSubmitLead={onSubmitLead} />
+          <AiFunnelChat funnel={funnel} professional={professional} disponibilidade={disponibilidade} onSubmitLead={onSubmitLead} fonte={fonte} />
         </div>
       </div>
     );
@@ -1088,7 +1095,7 @@ export function LadoB({
             </div>
           )}
           {(blocks.length > 0 || (funnel.produtos || []).some((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")) && (
-            <BlocksSection blocks={blocks} recursos={funnel.produtos || []} whatsapp={professional.whatsapp} onRecomendador={() => setChatAberto(true)} />
+            <BlocksSection blocks={blocks} recursos={funnel.produtos || []} whatsapp={professional.whatsapp} onRecomendador={() => setChatAberto(true)} slug={funnel.slug} fonte={fonte} />
           )}
         </div>
         {composer && (

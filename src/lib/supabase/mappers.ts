@@ -126,6 +126,8 @@ export const toLead = (r: LeadRow): Lead => ({
   status: r.status,
   consentimento: r.consentimento,
   origem: r.origem,
+  recursoId: r.recurso_id ?? undefined,
+  fonte: r.fonte ?? "",
   criadoEm: r.criado_em,
   _t: new Date(r.criado_em).getTime() || 0,
   _novo: r.novo,

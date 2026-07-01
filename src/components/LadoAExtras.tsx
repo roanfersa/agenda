@@ -11,6 +11,17 @@ import { presetQuestions } from "@/lib/flow-presets";
 import { hasFeature } from "@/lib/features";
 import type { Automation, FlowPreset, Funnel, Objetivo } from "@/lib/types";
 
+/** Normaliza o nome da fonte pra usar em querystring: minúsculo, sem acento, hifens. */
+function normalizaFonte(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /** Cartão de "recurso bloqueado" reutilizável quando a flag está off. */
 function RecursoBloqueado({ titulo, descricao }: { titulo: string; descricao: string }) {
   return (
@@ -260,7 +271,22 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
   const automations = useStore((s) => s.automations);
   const automacoesAtivas = automations.filter((a) => a.funnelId === f.id && a.ativa);
   const [confirmar, setConfirmar] = React.useState<null | "pausar" | "excluir">(null);
+  const [origemAberta, setOrigemAberta] = React.useState(false);
+  const [origemNome, setOrigemNome] = React.useState("");
   const obj = OBJ(f.objetivo);
+
+  const copiarComOrigem = async () => {
+    const norm = normalizaFonte(origemNome);
+    if (!norm) return;
+    try {
+      await navigator.clipboard.writeText(`${funnelUrl(f.slug)}?fonte=${norm}`);
+      toast("Link copiado ✓");
+    } catch {
+      toast("Não consegui copiar.");
+    }
+    setOrigemAberta(false);
+    setOrigemNome("");
+  };
   const keywordsTxt = automacoesAtivas.flatMap((a) => a.keywords).join(", ");
   return (
     <div
@@ -354,7 +380,29 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
         >
           <Icon name="copy" size={15} />
         </button>
+        <button
+          onClick={() => setOrigemAberta((v) => !v)}
+          style={{ color: "var(--accent)", display: "flex", alignItems: "center", gap: 4, flexShrink: 0, fontSize: 11.5, fontWeight: 700 }}
+          title="Copiar link com origem"
+        >
+          <Icon name="tag" size={14} /> Origem
+        </button>
       </div>
+      {origemAberta && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, animation: "fadeUp .2s both" }}>
+          <input
+            autoFocus
+            value={origemNome}
+            onChange={(e) => setOrigemNome(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && copiarComOrigem()}
+            placeholder="Ex: stories, anúncio, bio…"
+            style={{ flex: 1, minWidth: 0, border: "1.5px solid var(--line)", borderRadius: 10, padding: "9px 11px", fontSize: 13, fontFamily: "var(--font)", color: "var(--ink)", background: "#fff" }}
+          />
+          <Button size="sm" icon="copy" disabled={!normalizaFonte(origemNome)} onClick={copiarComOrigem}>
+            Copiar
+          </Button>
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14, fontSize: 13 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)" }}>
           <Icon name="users" size={15} />
