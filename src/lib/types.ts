@@ -213,7 +213,7 @@ export type Subscription = {
   nome: string;
   plano: Plano;
   valor: number;
-  ciclo: "mensal" | "unico";
+  ciclo: "mensal" | "anual" | "unico";
   proximoVencimento: string;
   status: "em_dia" | "atrasado" | "cancelado";
 };

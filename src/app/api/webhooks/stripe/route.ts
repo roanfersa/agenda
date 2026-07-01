@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     const priceId = sub.items.data[0]?.price.id;
     const plano = planoForPrice(priceId) ?? "entrada";
     const valor = (sub.items.data[0]?.price.unit_amount ?? 0) / 100;
+    const ciclo = sub.items.data[0]?.price.recurring?.interval === "year" ? "anual" : "mensal";
     const status =
       sub.status === "active" || sub.status === "trialing"
         ? sub.status === "trialing"
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
         professional_id: professionalId,
         plano,
         valor,
-        ciclo: "mensal",
+        ciclo,
         status,
         stripe_subscription_id: sub.id,
         current_period_end: new Date(sub.items.data[0].current_period_end * 1000).toISOString(),

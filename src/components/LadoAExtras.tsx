@@ -82,7 +82,8 @@ export function PlanosScreen() {
     }
   };
 
-  const assinante = professional.plano === "pro";
+  const subscription = useStore((s) => s.subscriptions[0]);
+  const cicloAtual = subscription && subscription.status !== "cancelado" ? subscription.ciclo : null;
   const FEATURES = [
     "Bio-funil + qualificação por IA",
     "Agendamento no fluxo (nativo/Calendly/Google)",
@@ -97,7 +98,7 @@ export function PlanosScreen() {
       preco: "R$120",
       periodo: "/mês",
       sub: "cobrado todo mês",
-      atual: assinante,
+      atual: cicloAtual === "mensal",
       destaque: false,
       soon: false,
       features: FEATURES,
@@ -108,7 +109,7 @@ export function PlanosScreen() {
       preco: "R$90",
       periodo: "/mês",
       sub: "R$1.080/ano · economize 25%",
-      atual: assinante,
+      atual: cicloAtual === "anual",
       destaque: true,
       soon: false,
       features: FEATURES,
