@@ -15,6 +15,7 @@ export type AppScreen =
   | "agenda"
   | "funis"
   | "funil"
+  | "recursos"
   | "automacoes"
   | "conversas"
   | "planos"
@@ -27,6 +28,7 @@ const ITEMS: Item[] = [
   { id: "leads", href: "/leads", label: "Leads", icon: "users" },
   { id: "agenda", href: "/agenda", label: "Agenda", icon: "calendar" },
   { id: "funis", href: "/funis", label: "Funis", icon: "funnel" },
+  { id: "recursos", href: "/recursos", label: "Recursos", icon: "link" },
   { id: "automacoes", href: "/automacoes", label: "Automações", icon: "instagram" },
   { id: "conversas", href: "/conversas", label: "Conversas", icon: "chat" },
   { id: "planos", href: "/planos", label: "Planos", icon: "bolt" },

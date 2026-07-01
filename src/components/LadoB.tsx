@@ -1087,8 +1087,8 @@ export function LadoB({
               </div>
             </div>
           )}
-          {(blocks.length > 0 || (professional.produtos || []).some((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")) && (
-            <BlocksSection blocks={blocks} recursos={professional.produtos || []} whatsapp={professional.whatsapp} onRecomendador={() => setChatAberto(true)} />
+          {(blocks.length > 0 || (funnel.produtos || []).some((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")) && (
+            <BlocksSection blocks={blocks} recursos={funnel.produtos || []} whatsapp={professional.whatsapp} onRecomendador={() => setChatAberto(true)} />
           )}
         </div>
         {composer && (
