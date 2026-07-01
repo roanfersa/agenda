@@ -158,7 +158,9 @@ export function BioLinkEditor() {
             ? { ...base, tipo: "link", titulo: "Novo link", url: "" }
             : tipo === "oferta"
               ? { ...base, tipo: "oferta", titulo: "Nova oferta", url: "", preco: "" }
-              : { ...base, tipo: "recurso", titulo: "Novo recurso", url: "" };
+              : tipo === "recomendador"
+                ? { ...base, tipo: "recomendador", titulo: "Não sabe por onde começar?", cta: "Me ajude a escolher" }
+                : { ...base, tipo: "recurso", titulo: "Novo recurso", url: "" };
     setBlocks((b) => [...b, novo]);
   };
   const patchBlock = (id: string, patch: Partial<FunnelBlock>) =>
@@ -261,7 +263,7 @@ export function BioLinkEditor() {
           {tab === "blocos" && (!podeBlocos ? <Bloqueado nome="Construtor de blocos" /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {(["link", "oferta", "recurso", "social", "texto"] as const).map((t) => (
+                {(["link", "oferta", "recurso", "recomendador", "social", "texto"] as const).map((t) => (
                   <Button key={t} size="sm" variant="outline" icon="plus" onClick={() => addBlock(t)}>{t}</Button>
                 ))}
               </div>
@@ -287,7 +289,15 @@ export function BioLinkEditor() {
                       ))}
                       <button onClick={() => patchBlock(b.id, { links: [...b.links, { rede: "", url: "" }] })} style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, textAlign: "left" }}>+ rede</button>
                     </div>
-                  ) : b.tipo === "funil" ? null : (
+                  ) : b.tipo === "funil" || b.tipo === "recomendador" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <Field value={b.titulo} onChange={(v) => patchBlock(b.id, { titulo: v })} placeholder="Título" />
+                      <Field value={b.cta} onChange={(v) => patchBlock(b.id, { cta: v })} placeholder="Texto do botão" />
+                      {b.tipo === "recomendador" && (
+                        <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Abre o funil por IA que ajuda o lead a escolher um recurso.</p>
+                      )}
+                    </div>
+                  ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       <Field value={b.titulo} onChange={(v) => patchBlock(b.id, { titulo: v })} placeholder="Título" />
                       <Field value={b.url} onChange={(v) => patchBlock(b.id, { url: v })} placeholder="URL" />

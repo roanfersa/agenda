@@ -5,7 +5,7 @@ import { Icon } from "./Icon";
 import { Avatar, Badge, Button, Card, SectionLabel } from "./ui";
 import { AutomacaoEditor } from "./AutomacaoEditor";
 import { CommentDMSim } from "./CommentDMSim";
-import { Overlay, funnelUrl } from "./shared";
+import { Overlay, funnelUrl, ConfirmModal } from "./shared";
 import { OBJ, useStore } from "@/lib/store";
 import { hasFeature } from "@/lib/features";
 import type { Automation, Funnel } from "@/lib/types";
@@ -256,7 +256,10 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
   const toggleFunnelStatus = useStore((s) => s.toggleFunnelStatus);
   const deleteFunnel = useStore((s) => s.deleteFunnel);
   const toast = useStore((s) => s.toast);
+  const automacoesAtivas = useStore((s) => s.automations.filter((a) => a.funnelId === f.id && a.ativa));
+  const [confirmar, setConfirmar] = React.useState<null | "pausar" | "excluir">(null);
   const obj = OBJ(f.objetivo);
+  const keywordsTxt = automacoesAtivas.flatMap((a) => a.keywords).join(", ");
   return (
     <div
       style={{
@@ -365,15 +368,45 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
             Usar na bio
           </Button>
         )}
-        <Button size="sm" variant="outline" onClick={() => toggleFunnelStatus(f.id)}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            if (f.status === "publicado" && automacoesAtivas.length) setConfirmar("pausar");
+            else toggleFunnelStatus(f.id);
+          }}
+        >
           {f.status === "publicado" ? "Pausar" : "Publicar"}
         </Button>
         {!active && (
-          <Button size="sm" variant="ghost" onClick={() => deleteFunnel(f.id)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (automacoesAtivas.length) setConfirmar("excluir");
+              else deleteFunnel(f.id);
+            }}
+          >
             <Icon name="trash" size={16} />
           </Button>
         )}
       </div>
+      {confirmar && (
+        <ConfirmModal
+          danger
+          icon="bolt"
+          title={confirmar === "pausar" ? "Pausar funil ligado a automação?" : "Excluir funil ligado a automação?"}
+          body={`Este funil está vinculado a ${automacoesAtivas.length} automação${automacoesAtivas.length > 1 ? "ões" : ""} ativa${automacoesAtivas.length > 1 ? "s" : ""} do Instagram${keywordsTxt ? ` (palavra-chave: ${keywordsTxt})` : ""}. Se ${confirmar === "pausar" ? "pausar" : "excluir"}, ${confirmar === "pausar" ? "a DM continua sendo enviada, mas o link do funil deixa de abrir corretamente" : "as automações ficam sem funil e mandam o link padrão"}. Deseja continuar?`}
+          confirm={confirmar === "pausar" ? "Pausar mesmo assim" : "Excluir mesmo assim"}
+          doubleConfirm={confirmar === "excluir"}
+          onConfirm={() => {
+            if (confirmar === "pausar") toggleFunnelStatus(f.id);
+            else deleteFunnel(f.id);
+            setConfirmar(null);
+          }}
+          onClose={() => setConfirmar(null)}
+        />
+      )}
     </div>
   );
 }

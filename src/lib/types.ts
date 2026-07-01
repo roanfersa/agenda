@@ -47,15 +47,35 @@ export type FunnelBlock =
   | { id: string; tipo: "link"; titulo: string; url: string; emoji?: string }
   | { id: string; tipo: "oferta"; titulo: string; descricao?: string; preco?: string; url: string; emoji?: string }
   | { id: string; tipo: "recurso"; titulo: string; descricao?: string; url: string; emoji?: string }
+  | { id: string; tipo: "recomendador"; titulo: string; cta: string }
   | { id: string; tipo: "social"; links: SocialLink[] }
   | { id: string; tipo: "texto"; texto: string };
 
+/** Tipo de recurso = forma de acesso que o profissional oferece ao lead. */
+export type RecursoTipo = "link" | "agenda" | "pdf" | "whatsapp";
+
+/**
+ * Recurso: o que o lead acessa (link, agenda, PDF, WhatsApp).
+ * Evolui o antigo `Produto` — os campos novos são opcionais para retrocompat
+ * (registros antigos = `tipo` "link", `ativo` true).
+ */
 export type Produto = {
   nome: string;
   descricao: string;
-  link?: string;
+  link?: string; // URL do link externo ou do PDF no Storage
   preco?: string;
+  id?: string;
+  tipo?: RecursoTipo;
+  emoji?: string;
+  ativo?: boolean;
+  /** PDF: conteúdo lido/resumido pela IA (cache). */
+  conteudo?: string;
+  status?: "pendente" | "pronto" | "erro";
+  /** Funil próprio opcional; se ausente, o botão entrega o recurso direto. */
+  funnelId?: string;
 };
+
+export type Recurso = Produto;
 
 /** Material de referência reutilizável (arquivo, nota de texto ou link). */
 export type Material = {
