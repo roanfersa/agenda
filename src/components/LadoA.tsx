@@ -716,91 +716,121 @@ export function LeadDetail({
 /* ---- AgendaScreen -------------------------------------------------------- */
 const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
-/** Editor de disponibilidade: define os horários que o lead pode marcar no funil. */
+/** Config de um dia: janela (das/às) + intervalo entre horários. */
+type DiaCfg = { on: boolean; ini: string; fim: string; passo: number };
+const DIA_OFF: DiaCfg = { on: false, ini: "09:00", fim: "18:00", passo: 60 };
+const toMin = (h: string) => Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5));
+const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+/** Gera os horários de uma janela: das `ini` (inclusive) até antes de `fim`, de `passo` em `passo` min. */
+function gerarHorarios({ ini, fim, passo }: DiaCfg): string[] {
+  const a = toMin(ini), b = toMin(fim), out: string[] = [];
+  if (b <= a || passo < 5) return [];
+  for (let m = a; m < b; m += passo) out.push(toHHMM(m));
+  return out;
+}
+/** Reconstrói a janela a partir de horários salvos (para reabrir com a mesma config). */
+function cfgFromHorarios(horarios: string[]): DiaCfg {
+  if (!horarios.length) return { ...DIA_OFF };
+  const hs = [...horarios].sort();
+  const passo = hs.length > 1 ? toMin(hs[1]) - toMin(hs[0]) : 60;
+  return { on: true, ini: hs[0], fim: toHHMM(toMin(hs[hs.length - 1]) + passo), passo: passo > 0 ? passo : 60 };
+}
+
+/** Editor de disponibilidade nativo: por dia, liga/desliga + janela (das/às) + intervalo. */
 function DisponibilidadeEditor() {
   const disponibilidade = useStore((s) => s.disponibilidade);
   const setDisponibilidade = useStore((s) => s.setDisponibilidade);
-  const [horas, setHoras] = React.useState<Record<string, string[]>>(() => {
-    const m: Record<string, string[]> = {};
-    disponibilidade.forEach((d) => (m[d.dia] = [...d.horarios].sort()));
+  const [cfg, setCfg] = React.useState<Record<string, DiaCfg>>(() => {
+    const m: Record<string, DiaCfg> = {};
+    DIAS_SEMANA.forEach((d) => {
+      const found = disponibilidade.find((x) => x.dia === d);
+      m[d] = found ? cfgFromHorarios(found.horarios) : { ...DIA_OFF };
+    });
     return m;
   });
-  const [novo, setNovo] = React.useState<Record<string, string>>({});
   const [dirty, setDirty] = React.useState(false);
-  const [aberto, setAberto] = React.useState(disponibilidade.length === 0);
-
-  const addHora = (dia: string) => {
-    const h = (novo[dia] || "").trim();
-    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(h)) return;
-    setHoras((s) => {
-      const atual = s[dia] || [];
-      return atual.includes(h) ? s : { ...s, [dia]: [...atual, h].sort() };
-    });
-    setNovo((s) => ({ ...s, [dia]: "" }));
+  const patch = (dia: string, p: Partial<DiaCfg>) => {
+    setCfg((s) => ({ ...s, [dia]: { ...s[dia], ...p } }));
     setDirty(true);
   };
-  const removeHora = (dia: string, h: string) => {
-    setHoras((s) => ({ ...s, [dia]: (s[dia] || []).filter((x) => x !== h) }));
+  const aplicarUteis = () => {
+    const base = cfg["Segunda"];
+    setCfg((s) => {
+      const n = { ...s };
+      ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"].forEach((d) => (n[d] = { ...base, on: true }));
+      return n;
+    });
     setDirty(true);
   };
   const salvar = () => {
-    const dias = DIAS_SEMANA.filter((d) => (horas[d] || []).length).map((d) => ({
-      id: "",
-      rotulo: d,
-      dia: d,
-      horarios: horas[d],
-    }));
+    const dias = DIAS_SEMANA.filter((d) => cfg[d].on)
+      .map((d) => ({ id: "", rotulo: d, dia: d, horarios: gerarHorarios(cfg[d]) }))
+      .filter((d) => d.horarios.length);
     setDisponibilidade(dias);
     setDirty(false);
   };
-  const total = Object.values(horas).reduce((n, hs) => n + hs.length, 0);
+  const totalSlots = DIAS_SEMANA.reduce((n, d) => n + (cfg[d].on ? gerarHorarios(cfg[d]).length : 0), 0);
+  const inputStyle: React.CSSProperties = { border: "1.5px solid var(--line)", borderRadius: 9, padding: "6px 8px", fontSize: 13, fontFamily: "var(--font)", color: "var(--ink)" };
 
   return (
     <Card pad={16}>
-      <button onClick={() => setAberto((v) => !v)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 4 }}>
         <span style={{ width: 36, height: 36, borderRadius: 10, background: "var(--accent-050)", color: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon name="calendar" size={18} />
         </span>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Sua disponibilidade</span>
-          <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
-            {total ? `${total} horário${total > 1 ? "s" : ""} — o lead escolhe direto na conversa` : "Defina os horários que o lead pode marcar no funil"}
-          </span>
-        </span>
-        <Icon name="chevDown" size={18} style={{ color: "var(--faint)", transform: aberto ? "rotate(180deg)" : "none", transition: "transform .2s", flexShrink: 0 }} />
-      </button>
-      {aberto && (
-        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-          {DIAS_SEMANA.map((dia) => (
-            <div key={dia} style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 12 }}>
-              <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)", marginBottom: 8 }}>{dia}</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                {(horas[dia] || []).map((h) => (
-                  <span key={h} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--accent-050)", color: "var(--accent-800)", border: "1px solid var(--accent-100)", borderRadius: 16, padding: "5px 6px 5px 11px", fontWeight: 700, fontSize: 13 }}>
-                    {h}
-                    <button onClick={() => removeHora(dia, h)} aria-label="remover" style={{ display: "inline-flex", color: "var(--accent-800)", opacity: 0.7 }}>
-                      <Icon name="x" size={13} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="time"
-                  value={novo[dia] || ""}
-                  onChange={(e) => setNovo((s) => ({ ...s, [dia]: e.target.value }))}
-                  onKeyDown={(e) => e.key === "Enter" && addHora(dia)}
-                  style={{ border: "1.5px solid var(--line)", borderRadius: 10, padding: "6px 8px", fontSize: 13, fontFamily: "var(--font)", color: "var(--ink)" }}
-                />
-                <button onClick={() => addHora(dia)} style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--accent)", fontWeight: 700, fontSize: 13 }}>
-                  <Icon name="plus" size={14} /> add
-                </button>
-              </div>
-            </div>
-          ))}
-          <Button onClick={salvar} disabled={!dirty} icon="check">
-            Salvar disponibilidade
-          </Button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>Sua disponibilidade</div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)" }}>
+            {totalSlots ? `${totalSlots} horário${totalSlots > 1 ? "s" : ""}/semana — o lead marca direto na conversa` : "Ligue os dias e defina o horário de atendimento"}
+          </div>
         </div>
-      )}
+        <button onClick={aplicarUteis} style={{ fontSize: 12.5, fontWeight: 700, color: "var(--accent)", flexShrink: 0, whiteSpace: "nowrap" }}>
+          Aplicar seg–sex
+        </button>
+      </div>
+      <div style={{ marginTop: 12, display: "flex", flexDirection: "column" }}>
+        {DIAS_SEMANA.map((dia) => {
+          const c = cfg[dia];
+          const slots = c.on ? gerarHorarios(c) : [];
+          return (
+            <div key={dia} style={{ borderTop: "1px solid var(--line-soft)", padding: "11px 0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={() => patch(dia, { on: !c.on })}
+                aria-pressed={c.on}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 108 }}
+              >
+                <span style={{ width: 34, height: 20, borderRadius: 20, background: c.on ? "var(--accent)" : "var(--line)", position: "relative", transition: "background .15s", flexShrink: 0 }}>
+                  <span style={{ position: "absolute", top: 2, left: c.on ? 16 : 2, width: 16, height: 16, borderRadius: 8, background: "#fff", transition: "left .15s", boxShadow: "0 1px 2px rgba(0,0,0,.2)" }} />
+                </span>
+                <span style={{ fontWeight: 700, fontSize: 13.5, color: c.on ? "var(--ink)" : "var(--faint)" }}>{dia}</span>
+              </button>
+              {c.on ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flex: 1 }}>
+                  <span style={{ fontSize: 12.5, color: "var(--muted)" }}>das</span>
+                  <input type="time" value={c.ini} onChange={(e) => patch(dia, { ini: e.target.value })} style={inputStyle} />
+                  <span style={{ fontSize: 12.5, color: "var(--muted)" }}>às</span>
+                  <input type="time" value={c.fim} onChange={(e) => patch(dia, { fim: e.target.value })} style={inputStyle} />
+                  <select value={c.passo} onChange={(e) => patch(dia, { passo: Number(e.target.value) })} style={{ ...inputStyle, cursor: "pointer" }}>
+                    <option value={30}>30 min</option>
+                    <option value={45}>45 min</option>
+                    <option value={60}>1 h</option>
+                    <option value={90}>1h30</option>
+                    <option value={120}>2 h</option>
+                  </select>
+                  <span style={{ fontSize: 12, color: slots.length ? "var(--accent)" : "var(--danger)", fontWeight: 700, marginLeft: 2 }}>
+                    {slots.length ? `${slots.length} horários` : "janela inválida"}
+                  </span>
+                </div>
+              ) : (
+                <span style={{ fontSize: 12.5, color: "var(--faint)" }}>Não atende</span>
+              )}
+            </div>
+          );
+        })}
+        <Button onClick={salvar} disabled={!dirty} icon="check" style={{ marginTop: 14 }}>
+          Salvar disponibilidade
+        </Button>
+      </div>
     </Card>
   );
 }
@@ -874,14 +904,64 @@ function CalendlyCard() {
         <button
           onClick={() => {
             setUrl("");
-            updateProfessional({ calendlyUrl: "" });
+            updateProfessional({ calendlyUrl: "", agendaMetodo: "nativa" });
           }}
           style={{ marginTop: 8, fontSize: 12.5, color: "var(--muted)", fontWeight: 600 }}
         >
-          Remover e voltar à agenda nativa
+          Remover e voltar à agenda do Revo
         </button>
       )}
     </Card>
+  );
+}
+
+/** Seletor do método de agenda: nativa, Google ou Calendly — mostra só a config escolhida. */
+function MetodoAgenda() {
+  const metodo = useStore((s) => s.professional.agendaMetodo) ?? "nativa";
+  const updateProfessional = useStore((s) => s.updateProfessional);
+  const opts: { id: "nativa" | "google" | "calendly"; icon: IconName; titulo: string; sub: string }[] = [
+    { id: "nativa", icon: "calendar", titulo: "Agenda do Revo", sub: "O lead marca dentro da conversa, com seus horários" },
+    { id: "google", icon: "google", titulo: "Google Agenda", sub: "Marca na conversa e cria o evento no seu Google" },
+    { id: "calendly", icon: "link", titulo: "Calendly", sub: "O funil mostra seu Calendly embutido" },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <Card pad={16}>
+        <div style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)", marginBottom: 3 }}>Como você quer agendar</div>
+        <div style={{ fontSize: 12.5, color: "var(--muted)", marginBottom: 12 }}>Escolha um método — é ele que o funil usa quando o lead vai marcar.</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {opts.map((o) => {
+            const on = metodo === o.id;
+            return (
+              <button
+                key={o.id}
+                onClick={() => !on && updateProfessional({ agendaMetodo: o.id })}
+                style={{
+                  display: "flex", alignItems: "center", gap: 11, textAlign: "left", padding: "11px 12px", borderRadius: 12,
+                  border: `1.5px solid ${on ? "var(--accent)" : "var(--line)"}`,
+                  background: on ? "var(--accent-050)" : "var(--card)",
+                  transition: "border-color .14s, background .14s",
+                }}
+              >
+                <span style={{ width: 34, height: 34, borderRadius: 9, background: on ? "var(--accent)" : "var(--accent-050)", color: on ? "#fff" : "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon name={o.icon} size={17} />
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>{o.titulo}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{o.sub}</span>
+                </span>
+                <span style={{ width: 20, height: 20, borderRadius: 10, border: `2px solid ${on ? "var(--accent)" : "var(--line)"}`, background: on ? "var(--accent)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {on && <Icon name="check" size={12} style={{ color: "#fff" }} />}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+      {metodo === "nativa" && <DisponibilidadeEditor />}
+      {metodo === "google" && <GoogleCalendarCard />}
+      {metodo === "calendly" && <CalendlyCard />}
+    </div>
   );
 }
 
@@ -896,9 +976,7 @@ export function AgendaScreen({ openLead }: { openLead: (id: string) => void }) {
   const keys = Object.keys(groups);
   return (
     <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <DisponibilidadeEditor />
-      <GoogleCalendarCard />
-      <CalendlyCard />
+      <MetodoAgenda />
       {!appts.length && (
         <EmptyState
           icon="calendar"

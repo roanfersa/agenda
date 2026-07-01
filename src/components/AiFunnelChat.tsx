@@ -112,8 +112,10 @@ export function AiFunnelChat({
         if (data.fase === "recomendar") {
           setRec(data.recomendacao ?? null);
           if (!preview) track("recommend", { slug: funnel.slug, recursoId: data.recomendacao?.recursoId, fonte });
-          // agendar abre seleção de horário; demais vão direto pro contato.
-          setStage(data.recomendacao?.tipo === "agendar" && disponibilidade.length > 0 ? "agenda" : "contato");
+          // agendar abre seleção de horário (nativa/Google) ou o Calendly embutido; demais vão direto pro contato.
+          const podeAgendar =
+            professional.agendaMetodo === "calendly" ? !!professional.calendlyUrl : disponibilidade.length > 0;
+          setStage(data.recomendacao?.tipo === "agendar" && podeAgendar ? "agenda" : "contato");
         } else {
           setOpcoes(data.opcoes ?? null);
         }
@@ -123,7 +125,7 @@ export function AiFunnelChat({
         setTyping(false);
       }
     },
-    [funnel.slug, preview, disponibilidade.length, fonte],
+    [funnel.slug, preview, disponibilidade.length, fonte, professional.agendaMetodo, professional.calendlyUrl],
   );
 
   React.useEffect(() => {
@@ -231,10 +233,10 @@ export function AiFunnelChat({
           )}
 
           {/* Seleção de horário (recomendação = agendar) */}
-          {stage === "agenda" && professional.calendlyUrl && (
+          {stage === "agenda" && professional.agendaMetodo === "calendly" && professional.calendlyUrl && (
             <CalendlyEmbed url={professional.calendlyUrl} />
           )}
-          {stage === "agenda" && !professional.calendlyUrl && (
+          {stage === "agenda" && !(professional.agendaMetodo === "calendly" && professional.calendlyUrl) && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {disponibilidade.map((d) => (
                 <div key={d.id}>
