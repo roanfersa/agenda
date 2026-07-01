@@ -256,7 +256,8 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
   const toggleFunnelStatus = useStore((s) => s.toggleFunnelStatus);
   const deleteFunnel = useStore((s) => s.deleteFunnel);
   const toast = useStore((s) => s.toast);
-  const automacoesAtivas = useStore((s) => s.automations.filter((a) => a.funnelId === f.id && a.ativa));
+  const automations = useStore((s) => s.automations);
+  const automacoesAtivas = automations.filter((a) => a.funnelId === f.id && a.ativa);
   const [confirmar, setConfirmar] = React.useState<null | "pausar" | "excluir">(null);
   const obj = OBJ(f.objetivo);
   const keywordsTxt = automacoesAtivas.flatMap((a) => a.keywords).join(", ");
