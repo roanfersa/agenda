@@ -9,7 +9,6 @@ import {
   QuestionEditor,
   type QFull,
 } from "./shared";
-import { FunnelPreview } from "./FunnelPreview";
 import { OBJETIVOS, useStore } from "@/lib/store";
 import { hasFeature } from "@/lib/features";
 import type { Objetivo } from "@/lib/types";
@@ -35,7 +34,6 @@ export function FunilEditor() {
   const [consent, setConsent] = React.useState(funnel.consentimentoTexto);
   const [campos, setCampos] = React.useState(funnel.camposContato);
   const [quando, setQuando] = React.useState<"inicio" | "fim">(funnel.contatoQuando);
-  const [tab, setTab] = React.useState<"editar" | "previa">("editar");
 
   const setQ = (i: number, patch: Partial<QFull>) =>
     setQuestions((qs) => qs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
@@ -103,11 +101,6 @@ export function FunilEditor() {
         .map(({ ativa, ...q }) => q),
     });
     toast("Funil republicado ✓");
-  };
-
-  const previewFunnel = {
-    mensagemBoasVindas: welcome,
-    perguntas: questions.filter((q) => q.ativa),
   };
 
   const editor = (
@@ -228,58 +221,7 @@ export function FunilEditor() {
     </div>
   );
 
-  const preview = (
-    <div>
-      <SectionLabel style={{ marginBottom: 10 }}>Prévia · como o lead vê</SectionLabel>
-      <FunnelPreview funnel={previewFunnel} pro={professional} />
-    </div>
-  );
-
-  return (
-    <div style={{ padding: "0 16px" }} className="lg:px-0">
-      {/* Mobile: tabs Editar / Prévia */}
-      <div className="lg:hidden">
-        <div
-          style={{
-            display: "flex",
-            background: "var(--bg)",
-            borderRadius: 12,
-            padding: 4,
-            marginBottom: 18,
-            border: "1px solid var(--line)",
-          }}
-        >
-          {(
-            [
-              ["editar", "Editar"],
-              ["previa", "Prévia"],
-            ] as const
-          ).map(([id, l]) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              style={{
-                flex: 1,
-                padding: "9px 0",
-                borderRadius: 9,
-                fontWeight: 700,
-                fontSize: 14,
-                background: tab === id ? "var(--card)" : "transparent",
-                color: tab === id ? "var(--ink)" : "var(--muted)",
-                boxShadow: tab === id ? "var(--sh-sm)" : "none",
-              }}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-        {tab === "editar" ? editor : preview}
-      </div>
-      {/* Desktop: side-by-side */}
-      <div className="hidden lg:grid lg:grid-cols-[1fr_380px] lg:gap-6">
-        <div>{editor}</div>
-        <div className="sticky top-6 self-start">{preview}</div>
-      </div>
-    </div>
-  );
+  // A prévia é renderizada pelo BioLinkEditor (painel fixo à direita no desktop
+  // e aba "Prévia" no mobile), então aqui mostramos só o formulário de edição.
+  return <div style={{ padding: "0 16px" }} className="lg:px-0">{editor}</div>;
 }
