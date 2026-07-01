@@ -345,11 +345,41 @@ export function LadoAOnboarding({
     if (cur !== "editor") return;
     if (metodo === "ia") {
       setGenerating(true);
-      const t = setTimeout(() => {
-        setBuilt(iaFunnel(objetivo, preIA));
-        setGenerating(false);
-      }, 1500);
-      return () => clearTimeout(t);
+      let cancel = false;
+      (async () => {
+        try {
+          const res = await fetch("/api/ai/funnel-generator", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ objetivo }),
+          });
+          const data = await res.json();
+          if (cancel) return;
+          if (res.ok && Array.isArray(data.perguntas) && data.perguntas.length) {
+            const fb = iaFunnel(objetivo, preIA);
+            setBuilt({
+              welcome: data.mensagemBoasVindas || fb.welcome,
+              questions: data.perguntas.map((q: { id: string; texto: string; tipo: "opcoes" | "texto_livre"; opcoes?: string[]; obrigatoria: boolean }) => ({
+                id: q.id,
+                texto: q.texto,
+                tipo: q.tipo,
+                opcoes: q.opcoes,
+                obrigatoria: q.obrigatoria,
+                ativa: true,
+              })),
+            });
+          } else {
+            setBuilt(iaFunnel(objetivo, preIA)); // fallback: heurística local
+          }
+        } catch {
+          if (!cancel) setBuilt(iaFunnel(objetivo, preIA));
+        } finally {
+          if (!cancel) setGenerating(false);
+        }
+      })();
+      return () => {
+        cancel = true;
+      };
     } else if (!built) {
       setBuilt({ welcome: MANUAL_START.welcome, questions: MANUAL_START.questions.map((q) => ({ ...q })) });
     }
