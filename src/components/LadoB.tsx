@@ -427,8 +427,49 @@ function PrivacySheet({
   );
 }
 
+/* ---- Embeds (Spotify / YouTube / genérico) ------------------------------ */
+function embedSrc(provedor: "spotify" | "youtube" | "generico", url: string): string | null {
+  if (!url) return null;
+  if (provedor === "spotify") {
+    // open.spotify.com/track/ID → open.spotify.com/embed/track/ID
+    return url.includes("/embed/") ? url : url.replace("open.spotify.com/", "open.spotify.com/embed/");
+  }
+  if (provedor === "youtube") {
+    const m = url.match(/(?:youtu\.be\/|v=|\/embed\/|shorts\/)([\w-]{6,})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+  }
+  return url; // genérico
+}
+
+function EmbedBlock({ provedor, url, titulo }: { provedor: "spotify" | "youtube" | "generico"; url: string; titulo?: string }) {
+  const src = embedSrc(provedor, url);
+  if (!src) return null;
+  const alturaFixa = provedor === "spotify" ? 152 : undefined;
+  return (
+    <div>
+      {titulo && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#3A463F", marginBottom: 6 }}>{titulo}</div>}
+      <div style={{ position: "relative", width: "100%", ...(alturaFixa ? { height: alturaFixa } : { paddingTop: "56.25%" }), borderRadius: 14, overflow: "hidden", background: "#000" }}>
+        <iframe
+          src={src}
+          title={titulo || "embed"}
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+        />
+      </div>
+    </div>
+  );
+}
+
 /* ---- Blocos estilo Linktree (renderizados no fim do fluxo) -------------- */
-function BlocksSection({ blocks, recursos, whatsapp, onRecomendador, slug, fonte }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string; onRecomendador?: () => void; slug?: string; fonte?: string }) {
+function BlocksSection({ blocks, recursos, whatsapp, onRecomendador, slug, fonte, instagramMedia = [] }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string; onRecomendador?: () => void; slug?: string; fonte?: string; instagramMedia?: { id: string; url: string; permalink: string }[] }) {
+  const ativos = recursos.filter((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda");
+  const comImagem = ativos.filter((r) => r.imagemUrl);
+  const semImagem = ativos.filter((r) => !r.imagemUrl);
+  const hrefRecurso = (r: Recurso) => ((r.tipo ?? "link") === "whatsapp" ? waLink(whatsapp, `Oi! Tenho interesse em: ${r.nome}`) : r.link);
+  const onRecClick = (r: Recurso) => (slug ? () => track("click", { slug, recursoId: r.id, fonte }) : undefined);
+
   const card = (children: React.ReactNode, href?: string, key?: string, onClick?: () => void) => {
     const inner = (
       <div
@@ -456,32 +497,57 @@ function BlocksSection({ blocks, recursos, whatsapp, onRecomendador, slug, fonte
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6, animation: "fadeUp .3s both" }}>
-      {recursos
-        .filter((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")
-        .map((r) => {
-          const tipo = r.tipo ?? "link";
-          const href = tipo === "whatsapp" ? waLink(whatsapp, `Oi! Tenho interesse em: ${r.nome}`) : r.link;
-          return card(
-            <>
-              {r.emoji && <span style={{ fontSize: 22 }}>{r.emoji}</span>}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14.5, color: "#15211C" }}>{r.nome}</div>
-                {r.descricao && <div style={{ fontSize: 12.5, color: "#6E7A73", marginTop: 1 }}>{r.descricao}</div>}
-              </div>
-              {r.preco && <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap" }}>{r.preco}</span>}
-              <Icon name="arrowRight" size={16} />
-            </>,
-            href,
-            "rec-" + (r.id ?? r.nome),
-            slug ? () => track("click", { slug, recursoId: r.id, fonte }) : undefined,
-          );
-        })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 6, animation: "fadeUp .3s both" }}>
+      {/* Carrossel de produtos com imagem — "Como posso te ajudar hoje" */}
+      {comImagem.length > 0 && (
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: "#6E7A73", margin: "2px 0 8px" }}>
+            👋 Como posso te ajudar hoje:
+          </div>
+          <div className="no-sb" style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x mandatory" }}>
+            {comImagem.map((r) => (
+              <a
+                key={"prod-" + (r.id ?? r.nome)}
+                href={hrefRecurso(r)}
+                target="_blank"
+                rel="noopener"
+                onClick={onRecClick(r)}
+                style={{ flex: "0 0 auto", width: 150, scrollSnapAlign: "start", textDecoration: "none", color: "inherit", background: "#fff", border: "1px solid rgba(21,33,28,.08)", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 3px rgba(21,33,28,.06)" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={r.imagemUrl} alt={r.nome} style={{ width: "100%", height: 150, objectFit: "cover", display: "block" }} />
+                <div style={{ padding: "9px 11px" }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: "#15211C", lineHeight: 1.2 }}>{r.nome}</div>
+                  {r.preco && <div style={{ fontSize: 12, fontWeight: 800, color: "var(--accent)", marginTop: 3 }}>{r.preco}</div>}
+                  <div style={{ marginTop: 7, fontSize: 11.5, fontWeight: 800, color: "var(--accent)" }}>Ver detalhes →</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Recursos sem imagem — cards verticais */}
+      {semImagem.map((r) =>
+        card(
+          <>
+            {r.emoji && <span style={{ fontSize: 22 }}>{r.emoji}</span>}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 14.5, color: "#15211C" }}>{r.nome}</div>
+              {r.descricao && <div style={{ fontSize: 12.5, color: "#6E7A73", marginTop: 1 }}>{r.descricao}</div>}
+            </div>
+            {r.preco && <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap" }}>{r.preco}</span>}
+            <Icon name="arrowRight" size={16} />
+          </>,
+          hrefRecurso(r),
+          "rec-" + (r.id ?? r.nome),
+          onRecClick(r),
+        ),
+      )}
       {blocks.map((b) => {
         if (b.tipo === "social") {
           return (
             <div key={b.id} style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-              {b.links.map((l, i) => (
+              {(b.links || []).map((l, i) => (
                 <a key={i} href={l.url} target="_blank" rel="noopener"
                    style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", textDecoration: "none" }}>
                   {l.rede}
@@ -525,15 +591,64 @@ function BlocksSection({ blocks, recursos, whatsapp, onRecomendador, slug, fonte
             </button>
           );
         }
+        if (b.tipo === "whatsapp") {
+          return (
+            <a
+              key={b.id}
+              href={waLink(b.numero || whatsapp, `Oi! ${b.titulo || ""}`.trim())}
+              target="_blank"
+              rel="noopener"
+              style={{ textDecoration: "none", display: "block", background: "#25D366", borderRadius: 14, padding: "13px 15px", boxShadow: "0 1px 3px rgba(21,33,28,.06)" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(255,255,255,.22)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon name="whatsapp" size={18} />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: "#fff" }}>{b.titulo || "WhatsApp"}</div>
+                  {(b.descricao || b.numero) && <div style={{ fontSize: 12, color: "rgba(255,255,255,.9)" }}>{b.descricao || fmtWhats(b.numero)}</div>}
+                </div>
+              </div>
+              <div style={{ marginTop: 10, textAlign: "center", background: "rgba(255,255,255,.9)", color: "#128C4A", fontWeight: 800, fontSize: 13, borderRadius: 20, padding: "8px 0" }}>
+                {b.cta || "Iniciar conversa →"}
+              </div>
+            </a>
+          );
+        }
+        if (b.tipo === "embed") {
+          return <EmbedBlock key={b.id} provedor={b.provedor} url={b.url} titulo={b.titulo} />;
+        }
+        if (b.tipo === "instagram") {
+          if (!instagramMedia.length) return null;
+          return (
+            <div key={b.id}>
+              {b.titulo && <div style={{ fontSize: 12.5, fontWeight: 700, color: "#3A463F", marginBottom: 6 }}>{b.titulo}</div>}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                {instagramMedia.map((p) => (
+                  <a key={p.id} href={p.permalink} target="_blank" rel="noopener" style={{ display: "block", aspectRatio: "1 / 1", borderRadius: 10, overflow: "hidden", background: "#eee" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        }
         // link | oferta | recurso | funil
         const titulo = "titulo" in b ? b.titulo : "";
         const descricao = "descricao" in b ? b.descricao : undefined;
         const preco = "preco" in b ? b.preco : undefined;
         const emoji = "emoji" in b ? b.emoji : undefined;
+        const imagemUrl = "imagemUrl" in b ? b.imagemUrl : undefined;
         const url = "url" in b ? b.url : undefined;
         return card(
           <>
-            {emoji && <span style={{ fontSize: 22 }}>{emoji}</span>}
+            {imagemUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imagemUrl} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+            ) : emoji ? (
+              <span style={{ fontSize: 22 }}>{emoji}</span>
+            ) : null}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 14.5, color: "#15211C" }}>{titulo}</div>
               {descricao && <div style={{ fontSize: 12.5, color: "#6E7A73", marginTop: 1 }}>{descricao}</div>}
@@ -551,6 +666,164 @@ function BlocksSection({ blocks, recursos, whatsapp, onRecomendador, slug, fonte
   );
 }
 
+/* ---- Ícones sociais do header ------------------------------------------- */
+function socialIcon(rede: string): import("./Icon").IconName {
+  const r = rede.toLowerCase();
+  if (r.includes("insta")) return "instagram";
+  if (r.includes("tiktok") || r.includes("tik")) return "tiktok";
+  if (r.includes("you")) return "youtube";
+  if (r.includes("linked")) return "linkedin";
+  if (r.includes("face")) return "facebook";
+  if (r === "x" || r.includes("twit")) return "twitter";
+  if (r.includes("whats") || r.includes("wa")) return "whatsapp";
+  return "globe";
+}
+
+/* ---- Modal de chat (entrada por IA na página de blocos) ------------------ */
+function ChatModal({
+  funnel,
+  professional,
+  disponibilidade,
+  onSubmitLead,
+  fonte,
+  onClose,
+}: {
+  funnel: Funnel;
+  professional: Professional;
+  disponibilidade: Disponibilidade[];
+  onSubmitLead?: (input: PublicLeadInput) => void | Promise<void>;
+  fonte?: string;
+  onClose: () => void;
+}) {
+  const [iniciado, setIniciado] = React.useState(false);
+  const theme = { ...DEFAULT_THEME, ...(funnel.theme || {}) };
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(21,33,28,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 14, backdropFilter: "blur(3px)" }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 440, height: "min(88dvh, 720px)", background: "#fff", borderRadius: 20, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(0,0,0,.35)", ["--accent" as string]: theme.brandColor } as React.CSSProperties}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(21,33,28,.08)" }}>
+          <Avatar name={professional.nome} src={theme.avatarUrl || professional.fotoUrl || undefined} size={34} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 14, color: "#15211C" }}>{professional.nome}</div>
+            <div style={{ fontSize: 11.5, color: "#128C4A", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 6, height: 6, borderRadius: 6, background: "#22C55E" }} /> Online
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Fechar" style={{ color: "#6E7A73", display: "inline-flex", padding: 4 }}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          {iniciado ? (
+            <AiFunnelChat funnel={funnel} professional={professional} disponibilidade={disponibilidade} onSubmitLead={onSubmitLead} fonte={fonte} />
+          ) : (
+            <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 24, gap: 14 }}>
+              <Avatar name={professional.nome} src={theme.avatarUrl || professional.fotoUrl || undefined} size={72} />
+              <div>
+                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 21, color: "#15211C" }}>Pronto para começarmos?</div>
+                <div style={{ fontSize: 14, color: "#6E7A73", marginTop: 4 }}>É bem rápido e prático.</div>
+              </div>
+              <button
+                onClick={() => setIniciado(true)}
+                style={{ background: "#15211C", color: "#fff", fontWeight: 800, fontSize: 15, border: "none", borderRadius: 26, padding: "13px 30px", cursor: "pointer" }}
+              >
+                Iniciar Chat
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---- Página de blocos (modo "pagina", estilo Linktree) ------------------ */
+function PaginaBlocos({
+  funnel,
+  professional,
+  disponibilidade,
+  onSubmitLead,
+  fonte,
+  instagramMedia,
+}: {
+  funnel: Funnel;
+  professional: Professional;
+  disponibilidade: Disponibilidade[];
+  onSubmitLead?: (input: PublicLeadInput) => void | Promise<void>;
+  fonte?: string;
+  instagramMedia: { id: string; url: string; permalink: string }[];
+}) {
+  const [chatAberto, setChatAberto] = React.useState(false);
+  const theme = { ...DEFAULT_THEME, ...(funnel.theme || {}) };
+  const tagline = theme.subheadline || `${professional.especialidade} · ${professional.atende}`;
+  return (
+    <div
+      style={{
+        position: "relative",
+        minHeight: "100dvh",
+        background: theme.bgImageUrl ? `url(${theme.bgImageUrl}) center/cover fixed` : theme.bgColor,
+        fontFamily: `"${theme.fontFamily}", var(--font-jakarta), sans-serif`,
+        ["--accent" as string]: theme.brandColor,
+      } as React.CSSProperties}
+    >
+      <div style={{ width: "100%", maxWidth: 560, margin: "0 auto", padding: "34px 16px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Hero */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10 }}>
+          <Avatar name={professional.nome} src={theme.avatarUrl || professional.fotoUrl || undefined} size={92} />
+          <div>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22, color: "#15211C" }}>{theme.headline || professional.nome}</div>
+            <div style={{ fontSize: 14, color: "#6E7A73", marginTop: 3, maxWidth: 320 }}>{tagline}</div>
+          </div>
+          {(theme.socialLinks || []).length > 0 && (
+            <div style={{ display: "flex", gap: 10, marginTop: 2 }}>
+              {theme.socialLinks.map((l, i) => (
+                <a
+                  key={i}
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={l.rede}
+                  style={{ width: 40, height: 40, borderRadius: 20, background: "rgba(21,33,28,.06)", color: "#15211C", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Icon name={socialIcon(l.rede)} size={18} />
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Blocos */}
+        <BlocksSection
+          blocks={funnel.blocks || []}
+          recursos={funnel.produtos || []}
+          whatsapp={professional.whatsapp}
+          onRecomendador={() => setChatAberto(true)}
+          slug={funnel.slug}
+          fonte={fonte}
+          instagramMedia={instagramMedia}
+        />
+        <div style={{ textAlign: "center", fontSize: 11.5, color: "#9AA69F", marginTop: 8 }}>
+          Criado com <b style={{ color: "#6E7A73" }}>Revo</b>
+        </div>
+      </div>
+      {chatAberto && (
+        <ChatModal
+          funnel={funnel}
+          professional={professional}
+          disponibilidade={disponibilidade}
+          onSubmitLead={onSubmitLead}
+          fonte={fonte}
+          onClose={() => setChatAberto(false)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function LadoB({
   objOverride,
   funnelOverride,
@@ -558,6 +831,7 @@ export function LadoB({
   disponibilidadeOverride,
   onSubmitLead,
   fonte,
+  instagramMedia = [],
 }: {
   objOverride?: Objetivo;
   funnelOverride?: Funnel;
@@ -565,6 +839,7 @@ export function LadoB({
   disponibilidadeOverride?: Disponibilidade[];
   onSubmitLead?: (input: PublicLeadInput) => void | Promise<void>;
   fonte?: string;
+  instagramMedia?: { id: string; url: string; permalink: string }[];
 }) {
   const storeFunnel = useStore((s) => s.funnel);
   const storeProfessional = useStore((s) => s.professional);
@@ -579,6 +854,20 @@ export function LadoB({
   const blocks: FunnelBlock[] = funnel.blocks || [];
   const objetivo: Objetivo = objOverride || funnel.objetivo || "agendar";
   const obj = OBJ(objetivo);
+
+  // Modo "página": layout de blocos estilo Linktree, com entrada de chat em modal.
+  if (funnel.pageMode === "pagina") {
+    return (
+      <PaginaBlocos
+        funnel={funnel}
+        professional={professional}
+        disponibilidade={disponibilidade}
+        onSubmitLead={onSubmitLead}
+        fonte={fonte}
+        instagramMedia={instagramMedia}
+      />
+    );
+  }
 
   const [msgs, setMsgs] = React.useState<Msg[]>([]);
   const [stage, setStage] = React.useState<Stage>("boot");

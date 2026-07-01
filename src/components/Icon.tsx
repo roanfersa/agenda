@@ -11,7 +11,8 @@ export type IconName =
   | "video" | "mappin" | "send" | "bolt" | "grid" | "logout" | "alert"
   | "money" | "sun" | "moon" | "phone" | "user" | "camera" | "refresh"
   | "chat" | "map" | "heart" | "bookmark" | "bolt2" | "tag" | "target"
-  | "wand" | "pencilPlus" | "file" | "paperclip";
+  | "wand" | "pencilPlus" | "file" | "paperclip"
+  | "tiktok" | "youtube" | "linkedin" | "facebook" | "twitter" | "globe";
 
 export function Icon({
   name,
@@ -54,6 +55,12 @@ export function Icon({
     sparkles: (<><path d="M12 3.5 13.7 9 19 10.7 13.7 12.4 12 18 10.3 12.4 5 10.7 10.3 9 12 3.5Z" {...p} /><path d="M18.5 4v3M20 5.5h-3M5.5 16v2.5M6.75 17.25h-2.5" {...p} /></>),
     google: (<g><path d="M21.6 12.2c0-.7-.06-1.4-.18-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3Z" fill="#4285F4" /><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.7-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z" fill="#34A853" /><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14Z" fill="#FBBC05" /><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 12 2a10 10 0 0 0-8.9 5.4L6.4 10c.8-2.4 3-4.1 5.6-4.1Z" fill="#EA4335" /></g>),
     instagram: (<><rect x="3.5" y="3.5" width="17" height="17" rx="5" {...p} /><circle cx="12" cy="12" r="4" {...p} /><circle cx="17" cy="7" r="1.1" fill="currentColor" stroke="none" /></>),
+    tiktok: (<><path d="M14 4v9.5a3.5 3.5 0 1 1-3-3.46" {...p} /><path d="M14 4c.4 2.4 2 4 4.5 4.2" {...p} /></>),
+    youtube: (<><rect x="2.5" y="6" width="19" height="12" rx="3.5" {...p} /><path d="M10.5 9.3v5.4l4.5-2.7-4.5-2.7Z" fill="currentColor" stroke="none" /></>),
+    linkedin: (<><rect x="3.5" y="3.5" width="17" height="17" rx="3" {...p} /><path d="M7 10.5V16M7 7.6v.1M11 16v-3a2 2 0 0 1 4 0v3M11 10.5V16" {...p} /></>),
+    facebook: (<><rect x="3.5" y="3.5" width="17" height="17" rx="5" {...p} /><path d="M14.5 8.2h-1.2c-.9 0-1.3.5-1.3 1.4V11h2.3l-.4 2.4H12V20" {...p} /></>),
+    twitter: (<><path d="M4 4l7 8.5M13 11.5 20 20M4.5 20l6.2-6.8M12.8 10.4 19.5 4" {...p} /></>),
+    globe: (<><circle cx="12" cy="12" r="8.5" {...p} /><path d="M3.5 12h17M12 3.5c2.4 2.3 3.7 5.4 3.7 8.5s-1.3 6.2-3.7 8.5c-2.4-2.3-3.7-5.4-3.7-8.5S9.6 5.8 12 3.5Z" {...p} /></>),
     arrowRight: (<><path d="M5 12h14M13 6l6 6-6 6" {...p} /></>),
     arrowLeft: (<><path d="M19 12H5M11 6l-6 6 6 6" {...p} /></>),
     bell: (<><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z" {...p} /><path d="M10 19a2 2 0 0 0 4 0" {...p} /></>),

@@ -37,6 +37,7 @@ export default async function PreviewFunnelPage({
         professional={data.professional}
         disponibilidade={data.disponibilidade}
         aiEnabled={data.aiEnabled}
+        instagramMedia={data.instagramMedia}
         preview
       />
     </>

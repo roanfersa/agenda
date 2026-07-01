@@ -28,6 +28,7 @@ export default async function PublicFunnelPage({
       disponibilidade={data.disponibilidade}
       objOverride={objOverride}
       aiEnabled={data.aiEnabled}
+      instagramMedia={data.instagramMedia}
     />
   );
 }

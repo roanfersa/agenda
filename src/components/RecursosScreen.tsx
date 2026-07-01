@@ -107,6 +107,27 @@ export function RecursosScreen() {
                   <Field value={p.nome} onChange={(v) => setP({ nome: v })} placeholder="Nome do recurso" />
                 </div>
                 <Field as="textarea" value={p.descricao} onChange={(v) => setP({ descricao: v })} placeholder="Descrição (a IA usa pra recomendar)" />
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  {p.imagemUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.imagemUrl} alt="" width={40} height={40} style={{ borderRadius: 8, objectFit: "cover" }} />
+                  )}
+                  <label style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, cursor: "pointer" }}>
+                    {uploading === "img-" + (p.id ?? i) ? "Enviando…" : p.imagemUrl ? "Trocar imagem do card" : "Imagem do card (opcional)"}
+                    <input type="file" hidden accept="image/*" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const rid = "img-" + (p.id ?? i);
+                      setUploading(rid);
+                      try {
+                        const url = await uploadFile("branding", professional.id, file);
+                        setP({ imagemUrl: url });
+                      } catch { toast("Falha no upload"); }
+                      setUploading(null);
+                    }} />
+                  </label>
+                  {p.imagemUrl && <button onClick={() => setP({ imagemUrl: undefined })} style={{ fontSize: 12, color: "var(--danger)", fontWeight: 600 }}>Remover</button>}
+                </div>
                 {tipo === "link" && <Field value={p.link || ""} onChange={(v) => setP({ link: v })} placeholder="URL do link" />}
                 {tipo === "pdf" && (
                   p.link ? (

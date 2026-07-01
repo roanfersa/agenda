@@ -14,6 +14,7 @@ export function PublicFunnelClient({
   objOverride,
   preview = false,
   aiEnabled = false,
+  instagramMedia = [],
 }: {
   funnel: Funnel;
   professional: Professional;
@@ -21,6 +22,7 @@ export function PublicFunnelClient({
   objOverride?: Objetivo;
   preview?: boolean;
   aiEnabled?: boolean;
+  instagramMedia?: { id: string; url: string; permalink: string }[];
 }) {
   const [fonte, setFonte] = React.useState("");
 
@@ -74,6 +76,7 @@ export function PublicFunnelClient({
           objOverride={objOverride}
           onSubmitLead={onSubmitLead}
           fonte={fonte}
+          instagramMedia={instagramMedia}
           key={`${funnel.slug}-${objOverride || "default"}`}
         />
       )}

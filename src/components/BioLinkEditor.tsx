@@ -15,11 +15,49 @@ import {
   type FlowPreset,
   type FunnelBlock,
   type FunnelTheme,
+  type SocialLink,
 } from "@/lib/types";
+
+/** Bloco cru vindo da IA (campos frouxos) → normalizado pro formato real do FunnelBlock. */
+type AiBlock = {
+  tipo?: string;
+  titulo?: string;
+  descricao?: string;
+  preco?: string;
+  url?: string;
+  emoji?: string;
+  texto?: string;
+  cta?: string;
+  links?: SocialLink[];
+};
+
+/** Garante que todo bloco gerado pela IA tenha os campos que o editor/render esperam. */
+function normalizeAiBlock(b: AiBlock): FunnelBlock {
+  const id = uuid();
+  const emoji = typeof b.emoji === "string" ? b.emoji : undefined;
+  switch (b.tipo) {
+    case "texto":
+      return { id, tipo: "texto", texto: b.texto || b.titulo || "" };
+    case "social":
+      return { id, tipo: "social", links: Array.isArray(b.links) ? b.links : [] };
+    case "oferta":
+      return { id, tipo: "oferta", titulo: b.titulo || "", descricao: b.descricao, preco: b.preco, url: b.url || "", emoji };
+    case "recurso":
+      return { id, tipo: "recurso", titulo: b.titulo || "", descricao: b.descricao, url: b.url || "", emoji };
+    case "recomendador":
+      return { id, tipo: "recomendador", titulo: b.titulo || "Não sabe por onde começar?", cta: b.cta || "Me ajuda a escolher" };
+    case "funil":
+      return { id, tipo: "funil", titulo: b.titulo || "", cta: b.cta || "Começar" };
+    case "link":
+    default:
+      return { id, tipo: "link", titulo: b.titulo || b.texto || "Link", url: b.url || "", emoji };
+  }
+}
 
 type Tab = "identidade" | "blocos" | "funil" | "recursos" | "previa";
 
 const FONTES = ["Plus Jakarta Sans", "Poppins", "Inter", "Georgia", "system-ui"];
+const REDES = ["Instagram", "TikTok", "YouTube", "LinkedIn", "Facebook", "X", "Site"];
 
 export function BioLinkEditor() {
   const funnel = useStore((s) => s.funnel);
@@ -30,7 +68,6 @@ export function BioLinkEditor() {
   const podeBranding = hasFeature(professional, "branding");
   const podeBlocos = hasFeature(professional, "blocos_links");
   const podeGerar = hasFeature(professional, "gerar_ia");
-  const aiChat = hasFeature(professional, "chat_ia");
 
   const [tab, setTab] = React.useState<Tab>("identidade");
   const [theme, setTheme] = React.useState<FunnelTheme>({ ...DEFAULT_THEME, ...(funnel.theme || {}) });
@@ -88,7 +125,7 @@ export function BioLinkEditor() {
       setFlowPreset(data.flowPreset || "bio_quiz");
       setTk({ brandColor: data.brandColor || theme.brandColor, headline: data.headline || "", subheadline: data.subheadline || "" });
       if (Array.isArray(data.blocks)) {
-        setBlocks(data.blocks.map((b: Omit<FunnelBlock, "id">) => ({ ...b, id: uuid() }) as FunnelBlock));
+        setBlocks(data.blocks.map((b: AiBlock) => normalizeAiBlock(b)));
       }
       // Aplica boas-vindas/perguntas no funil também.
       if (data.boasVindas || Array.isArray(data.perguntas)) {
@@ -121,11 +158,29 @@ export function BioLinkEditor() {
               ? { ...base, tipo: "oferta", titulo: "Nova oferta", url: "", preco: "" }
               : tipo === "recomendador"
                 ? { ...base, tipo: "recomendador", titulo: "Não sabe por onde começar?", cta: "Me ajude a escolher" }
-                : { ...base, tipo: "recurso", titulo: "Novo recurso", url: "" };
+                : tipo === "whatsapp"
+                  ? { ...base, tipo: "whatsapp", titulo: "Fale comigo", numero: professional.whatsapp || "", cta: "Iniciar conversa →" }
+                  : tipo === "embed"
+                    ? { ...base, tipo: "embed", provedor: "youtube", url: "" }
+                    : tipo === "instagram"
+                      ? { ...base, tipo: "instagram", titulo: "No meu Instagram" }
+                      : { ...base, tipo: "recurso", titulo: "Novo recurso", url: "" };
     setBlocks((b) => [...b, novo]);
   };
   const patchBlock = (id: string, patch: Partial<FunnelBlock>) =>
     setBlocks((bs) => bs.map((b) => (b.id === id ? ({ ...b, ...patch } as FunnelBlock) : b)));
+  const uploadBlockImage = async (id: string, file?: File) => {
+    if (!file) return;
+    setUploading("bloco-" + id);
+    try {
+      const url = await uploadBranding(professional.id, file);
+      patchBlock(id, { imagemUrl: url } as Partial<FunnelBlock>);
+    } catch {
+      toast("Falha no upload da imagem");
+    } finally {
+      setUploading(null);
+    }
+  };
   const removeBlock = (id: string) => setBlocks((bs) => bs.filter((b) => b.id !== id));
   const moveBlock = (i: number, dir: -1 | 1) =>
     setBlocks((bs) => {
@@ -157,6 +212,28 @@ export function BioLinkEditor() {
         <div style={{ flex: 1 }} />
         <Button size="sm" variant="outline" onClick={salvar}>Salvar</Button>
         <Button size="sm" icon="check" onClick={publicar}>Publicar</Button>
+      </div>
+
+      {/* Modo da página */}
+      <div style={{ marginBottom: 14 }}>
+        <SectionLabel style={{ marginBottom: 6 }}>Modo da página</SectionLabel>
+        <div style={{ display: "flex", gap: 8 }}>
+          {([
+            ["pagina", "Página", "Blocos (links, produtos, WhatsApp…) + botão de chat"],
+            ["conversa", "Só conversa", "Abre direto no chat com IA"],
+          ] as const).map(([id, label, desc]) => {
+            const on = (funnel.pageMode ?? "conversa") === id;
+            return (
+              <button key={id} onClick={() => updateFunnel({ pageMode: id })}
+                style={{ flex: 1, textAlign: "left", padding: "10px 12px", borderRadius: 12,
+                  border: `1.5px solid ${on ? "var(--accent)" : "var(--line)"}`,
+                  background: on ? "var(--accent-050)" : "var(--card)" }}>
+                <div style={{ fontWeight: 700, fontSize: 13.5, color: on ? "var(--accent-800)" : "var(--ink)" }}>{label}</div>
+                <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 2 }}>{desc}</div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -218,13 +295,32 @@ export function BioLinkEditor() {
                   </div>
                 </div>
               ))}
+              <div>
+                <SectionLabel style={{ marginBottom: 8 }}>Redes sociais (ícones no topo)</SectionLabel>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {(theme.socialLinks || []).map((l, i) => (
+                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <select
+                        value={REDES.includes(l.rede) ? l.rede : "Site"}
+                        onChange={(e) => setTk({ socialLinks: (theme.socialLinks || []).map((x, k) => k === i ? { ...x, rede: e.target.value } : x) })}
+                        style={{ border: "1.5px solid var(--line)", borderRadius: 10, padding: "10px 8px", fontSize: 14, fontFamily: "var(--font)", color: "var(--ink)", background: "var(--card)", cursor: "pointer", flexShrink: 0 }}
+                      >
+                        {REDES.map((r) => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                      <Field value={l.url} onChange={(v) => setTk({ socialLinks: (theme.socialLinks || []).map((x, k) => k === i ? { ...x, url: v } : x) })} placeholder="Cole o link do seu perfil" />
+                      <button onClick={() => setTk({ socialLinks: (theme.socialLinks || []).filter((_, k) => k !== i) })} style={{ color: "var(--danger)", flexShrink: 0 }}><Icon name="trash" size={16} /></button>
+                    </div>
+                  ))}
+                  <button onClick={() => setTk({ socialLinks: [...(theme.socialLinks || []), { rede: "Instagram", url: "" }] })} style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, textAlign: "left" }}>+ rede social</button>
+                </div>
+              </div>
             </div>
           ))}
 
           {tab === "blocos" && (!podeBlocos ? <Bloqueado nome="Construtor de blocos" /> : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {(["link", "oferta", "recurso", "recomendador", "social", "texto"] as const).map((t) => (
+                {(["link", "oferta", "recurso", "whatsapp", "embed", "instagram", "recomendador", "social", "texto"] as const).map((t) => (
                   <Button key={t} size="sm" variant="outline" icon="plus" onClick={() => addBlock(t)}>{t}</Button>
                 ))}
               </div>
@@ -242,21 +338,54 @@ export function BioLinkEditor() {
                     <Field as="textarea" value={b.texto} onChange={(v) => patchBlock(b.id, { texto: v })} />
                   ) : b.tipo === "social" ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {b.links.map((l, li) => (
-                        <div key={li} style={{ display: "flex", gap: 6 }}>
-                          <Field value={l.rede} onChange={(v) => patchBlock(b.id, { links: b.links.map((x, k) => k === li ? { ...x, rede: v } : x) })} placeholder="Rede" />
-                          <Field value={l.url} onChange={(v) => patchBlock(b.id, { links: b.links.map((x, k) => k === li ? { ...x, url: v } : x) })} placeholder="URL" />
+                      {(b.links || []).map((l, li) => (
+                        <div key={li} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <select
+                            value={REDES.includes(l.rede) ? l.rede : "Site"}
+                            onChange={(e) => patchBlock(b.id, { links: b.links.map((x, k) => k === li ? { ...x, rede: e.target.value } : x) })}
+                            style={{ border: "1.5px solid var(--line)", borderRadius: 10, padding: "10px 8px", fontSize: 14, fontFamily: "var(--font)", color: "var(--ink)", background: "var(--card)", cursor: "pointer", flexShrink: 0 }}
+                          >
+                            {REDES.map((r) => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                          <Field value={l.url} onChange={(v) => patchBlock(b.id, { links: b.links.map((x, k) => k === li ? { ...x, url: v } : x) })} placeholder="Cole o link" />
                         </div>
                       ))}
-                      <button onClick={() => patchBlock(b.id, { links: [...b.links, { rede: "", url: "" }] })} style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, textAlign: "left" }}>+ rede</button>
+                      <button onClick={() => patchBlock(b.id, { links: [...(b.links || []), { rede: "", url: "" }] })} style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, textAlign: "left" }}>+ rede</button>
                     </div>
                   ) : b.tipo === "funil" || b.tipo === "recomendador" ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       <Field value={b.titulo} onChange={(v) => patchBlock(b.id, { titulo: v })} placeholder="Título" />
                       <Field value={b.cta} onChange={(v) => patchBlock(b.id, { cta: v })} placeholder="Texto do botão" />
                       {b.tipo === "recomendador" && (
-                        <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Abre o funil por IA que ajuda o lead a escolher um recurso.</p>
+                        <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Abre o funil por IA (em modal) que ajuda o lead a escolher.</p>
                       )}
+                    </div>
+                  ) : b.tipo === "whatsapp" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <Field value={b.titulo} onChange={(v) => patchBlock(b.id, { titulo: v })} placeholder="Título (ex.: Publicidade)" />
+                      <Field value={b.numero} onChange={(v) => patchBlock(b.id, { numero: v } as Partial<FunnelBlock>)} placeholder="Número com DDD (ex.: 5511999999999)" />
+                      <Field value={b.descricao || ""} onChange={(v) => patchBlock(b.id, { descricao: v })} placeholder="Descrição (opcional)" />
+                      <Field value={b.cta || ""} onChange={(v) => patchBlock(b.id, { cta: v })} placeholder="Texto do botão (opcional)" />
+                    </div>
+                  ) : b.tipo === "embed" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {(["youtube", "spotify", "generico"] as const).map((p) => (
+                          <button key={p} onClick={() => patchBlock(b.id, { provedor: p } as Partial<FunnelBlock>)}
+                            style={{ flex: 1, padding: "7px 0", borderRadius: 9, fontSize: 12.5, fontWeight: 700,
+                              border: `1.5px solid ${b.provedor === p ? "var(--accent)" : "var(--line)"}`,
+                              background: b.provedor === p ? "var(--accent-050)" : "var(--card)", color: b.provedor === p ? "var(--accent-800)" : "var(--muted)" }}>
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                      <Field value={b.url} onChange={(v) => patchBlock(b.id, { url: v })} placeholder="Cole o link (YouTube/Spotify/URL)" />
+                      <Field value={b.titulo || ""} onChange={(v) => patchBlock(b.id, { titulo: v })} placeholder="Título (opcional)" />
+                    </div>
+                  ) : b.tipo === "instagram" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <Field value={b.titulo || ""} onChange={(v) => patchBlock(b.id, { titulo: v })} placeholder="Título (ex.: No meu Instagram)" />
+                      <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Mostra seus posts recentes do Instagram conectado. Some se a conta não estiver conectada.</p>
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -268,6 +397,17 @@ export function BioLinkEditor() {
                       {b.tipo === "oferta" && (
                         <Field value={b.preco || ""} onChange={(v) => patchBlock(b.id, { preco: v })} placeholder="Preço (ex.: R$97)" />
                       )}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {b.imagemUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={b.imagemUrl} alt="" width={40} height={40} style={{ borderRadius: 8, objectFit: "cover" }} />
+                        )}
+                        <label style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", cursor: "pointer" }}>
+                          {uploading === "bloco-" + b.id ? "Enviando…" : b.imagemUrl ? "Trocar imagem" : "Enviar imagem"}
+                          <input type="file" accept="image/*" hidden onChange={(e) => uploadBlockImage(b.id, e.target.files?.[0])} />
+                        </label>
+                        {b.imagemUrl && <button onClick={() => patchBlock(b.id, { imagemUrl: undefined } as Partial<FunnelBlock>)} style={{ fontSize: 12.5, color: "var(--danger)", fontWeight: 600 }}>Remover</button>}
+                      </div>
                     </div>
                   )}
                 </Card>
@@ -299,7 +439,7 @@ export function BioLinkEditor() {
 
           {tab === "previa" && (
             <div style={{ border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden", maxHeight: 640 }} className="lg:hidden">
-              <PreviewPane funnel={previewFunnel} aiChat={aiChat} />
+              <PreviewPane funnel={previewFunnel} />
             </div>
           )}
         </div>
@@ -307,7 +447,7 @@ export function BioLinkEditor() {
         {/* Prévia fixa no desktop */}
         <div className="hidden lg:block lg:sticky lg:top-6">
           <div style={{ border: "1px solid var(--line)", borderRadius: 16, overflow: "hidden", height: 700 }}>
-            <PreviewPane funnel={previewFunnel} aiChat={aiChat} />
+            <PreviewPane funnel={previewFunnel} />
           </div>
         </div>
       </div>
@@ -315,9 +455,11 @@ export function BioLinkEditor() {
   );
 }
 
-function PreviewPane({ funnel, aiChat }: { funnel: import("@/lib/types").Funnel; aiChat: boolean }) {
+function PreviewPane({ funnel }: { funnel: import("@/lib/types").Funnel }) {
   const professional = useStore((s) => s.professional);
   const disponibilidade = useStore((s) => s.disponibilidade);
+  // A prévia segue o modo do funil (gated por chat_ia), igual ao render público.
+  const aiChat = funnel.pageMode === "conversa" && hasFeature(professional, "chat_ia");
   return (
     <div style={{ height: "100%", overflowY: "auto" }} className="no-sb">
       {aiChat ? (
