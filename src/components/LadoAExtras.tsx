@@ -48,14 +48,14 @@ export function PlanosScreen() {
   const toast = useStore((s) => s.toast);
   const [busy, setBusy] = React.useState(false);
 
-  const irParaCheckout = async (plano: "entrada" | "pro" | "setup") => {
+  const irParaCheckout = async (ciclo: "mensal" | "anual") => {
     if (busy) return;
     setBusy(true);
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plano }),
+        body: JSON.stringify({ ciclo }),
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
@@ -82,51 +82,36 @@ export function PlanosScreen() {
     }
   };
 
+  const assinante = professional.plano === "pro";
+  const FEATURES = [
+    "Bio-funil + qualificação por IA",
+    "Agendamento no fluxo (nativo/Calendly/Google)",
+    "Automação comentário → DM do Instagram",
+    "Inbox de atendimento humano",
+    "Recursos, funis e análises",
+  ];
   const planos = [
     {
-      id: "entrada" as const,
-      nome: "Entrada",
-      preco: "R$97",
+      ciclo: "mensal" as const,
+      nome: "Mensal",
+      preco: "R$120",
       periodo: "/mês",
-      atual: professional.plano === "entrada",
+      sub: "cobrado todo mês",
+      atual: assinante,
       destaque: false,
       soon: false,
-      features: [
-        "Bio-funil + qualificação",
-        "Agendamento no fluxo",
-        "Resumo do lead no WhatsApp",
-        "Leads e agenda ilimitados",
-      ],
+      features: FEATURES,
     },
     {
-      id: "pro" as const,
-      nome: 'Pro · "Secretária"',
-      preco: "R$297",
+      ciclo: "anual" as const,
+      nome: "Anual",
+      preco: "R$90",
       periodo: "/mês",
-      atual: professional.plano === "pro",
-      soon: false,
+      sub: "R$1.080/ano · economize 25%",
+      atual: assinante,
       destaque: true,
-      features: [
-        "Tudo do Entrada",
-        "Automação de WhatsApp",
-        "Comment → DM do Instagram",
-        "Follow-up e lembrete por IA",
-        "Reagendamento e multi-atendente",
-      ],
-    },
-    {
-      id: "setup" as const,
-      nome: "Setup assistido",
-      preco: "R$300–500",
-      periodo: "única vez",
-      atual: false,
-      destaque: false,
       soon: false,
-      features: [
-        "A gente monta seu funil pra você",
-        "Sessão de configuração",
-        "Funil pronto pra publicar",
-      ],
+      features: FEATURES,
     },
   ];
   return (
@@ -155,10 +140,10 @@ export function PlanosScreen() {
           </div>
         </div>
       </div>
-      <div className="lg:grid lg:grid-cols-3 lg:gap-4 flex flex-col gap-4">
+      <div className="lg:grid lg:grid-cols-2 lg:gap-4 flex flex-col gap-4">
       {planos.map((p) => (
         <div
-          key={p.id}
+          key={p.ciclo}
           style={{
             background: "var(--card)",
             borderRadius: "var(--r-lg)",
@@ -205,7 +190,7 @@ export function PlanosScreen() {
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 18, color: "var(--ink)" }}>
             {p.nome}
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "8px 0 16px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 4, margin: "8px 0 2px" }}>
             <span
               style={{
                 fontFamily: "var(--font-display)",
@@ -219,6 +204,7 @@ export function PlanosScreen() {
             </span>
             <span style={{ fontSize: 14, color: "var(--muted)", fontWeight: 600 }}>{p.periodo}</span>
           </div>
+          <div style={{ fontSize: 12.5, color: p.destaque ? "var(--accent-800)" : "var(--muted)", fontWeight: 600, marginBottom: 16 }}>{p.sub}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
             {p.features.map((f, i) => (
               <div
@@ -243,13 +229,9 @@ export function PlanosScreen() {
             full
             variant={p.atual ? "soft" : p.destaque ? "primary" : "dark"}
             disabled={busy}
-            onClick={() => (p.atual ? abrirPortal() : irParaCheckout(p.id))}
+            onClick={() => (p.atual ? abrirPortal() : irParaCheckout(p.ciclo))}
           >
-            {p.atual
-              ? "Gerenciar assinatura"
-              : p.id === "setup"
-              ? "Quero o setup assistido"
-              : "Assinar"}
+            {p.atual ? "Gerenciar assinatura" : p.destaque ? "Assinar anual" : "Assinar mensal"}
           </Button>
         </div>
       ))}

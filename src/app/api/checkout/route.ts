@@ -16,10 +16,11 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
-  const { plano } = (await request.json().catch(() => ({}))) as { plano?: Plano };
-  const price = plano ? priceFor(plano) : null;
-  if (!plano || !price) {
-    return NextResponse.json({ error: "Plano inválido ou sem price configurado." }, { status: 400 });
+  const { ciclo } = (await request.json().catch(() => ({}))) as { ciclo?: "mensal" | "anual" };
+  const plano: Plano = "pro";
+  const price = priceFor(plano, ciclo === "anual" ? "anual" : "mensal");
+  if (!price) {
+    return NextResponse.json({ error: "Preço não configurado (STRIPE_PRICE_MENSAL/ANUAL)." }, { status: 400 });
   }
 
   // Reusa/garante o customer do Stripe.
@@ -44,14 +45,13 @@ export async function POST(request: Request) {
   }
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
-  const isSetup = plano === "setup";
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
-    mode: isSetup ? "payment" : "subscription",
+    mode: "subscription",
     line_items: [{ price, quantity: 1 }],
-    ...(isSetup ? {} : { subscription_data: { trial_period_days: TRIAL_DAYS } }),
-    metadata: { professional_id: user.id, plano },
+    subscription_data: { trial_period_days: TRIAL_DAYS },
+    metadata: { professional_id: user.id, plano, ciclo: ciclo === "anual" ? "anual" : "mensal" },
     success_url: `${site}/planos?status=sucesso`,
     cancel_url: `${site}/planos?status=cancelado`,
     locale: "pt-BR",

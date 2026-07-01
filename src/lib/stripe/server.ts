@@ -10,26 +10,22 @@ export function getStripe(): Stripe | null {
   return _stripe;
 }
 
-/** Price ID do Stripe para cada plano (configurado via env). */
-export function priceFor(plano: Plano): string | null {
-  switch (plano) {
-    case "entrada":
-      return process.env.STRIPE_PRICE_ENTRADA ?? null;
-    case "pro":
-      return process.env.STRIPE_PRICE_PRO ?? null;
-    case "setup":
-      return process.env.STRIPE_PRICE_SETUP ?? null;
-    default:
-      return null;
-  }
+export type Ciclo = "mensal" | "anual";
+
+/**
+ * Price ID do Stripe. O produto é único (acesso total = plano "pro"); o que muda
+ * é o ciclo: mensal (R$120/mês) ou anual (R$1.080/ano = R$90/mês).
+ */
+export function priceFor(_plano: Plano, ciclo: Ciclo = "mensal"): string | null {
+  return ciclo === "anual"
+    ? (process.env.STRIPE_PRICE_ANUAL ?? null)
+    : (process.env.STRIPE_PRICE_MENSAL ?? null);
 }
 
-/** Plano correspondente a um price ID (usado no webhook). */
+/** Plano correspondente a um price ID (usado no webhook). Ambos os ciclos = "pro". */
 export function planoForPrice(priceId: string | null | undefined): Plano | null {
   if (!priceId) return null;
-  if (priceId === process.env.STRIPE_PRICE_ENTRADA) return "entrada";
-  if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
-  if (priceId === process.env.STRIPE_PRICE_SETUP) return "setup";
+  if (priceId === process.env.STRIPE_PRICE_MENSAL || priceId === process.env.STRIPE_PRICE_ANUAL) return "pro";
   return null;
 }
 
