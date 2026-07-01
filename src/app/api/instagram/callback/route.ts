@@ -8,11 +8,12 @@ import {
   subscribe,
 } from "@/lib/integrations/meta";
 import { saveConnection } from "@/lib/data/instagram";
+import { publicOrigin } from "@/lib/http/public-url";
 
 /** Callback OAuth do Instagram: troca o code, lê o perfil, inscreve e salva. */
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
+  const { searchParams } = new URL(request.url);
+  const site = publicOrigin(request);
   const code = searchParams.get("code");
   const state = searchParams.get("state");
 

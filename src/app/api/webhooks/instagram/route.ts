@@ -6,6 +6,7 @@ import {
   verifySignature,
 } from "@/lib/integrations/meta";
 import { claimEvent, getConnectionByIgUserId } from "@/lib/data/instagram";
+import { publicOrigin } from "@/lib/http/public-url";
 
 /** Verificação do webhook (Meta envia um GET com hub.challenge). */
 export async function GET(request: Request) {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   const db = createAdminClient();
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  const site = publicOrigin(request);
 
   for (const entry of body.entry ?? []) {
     const igUserId = entry.id;

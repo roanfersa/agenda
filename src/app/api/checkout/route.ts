@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe, priceFor, TRIAL_DAYS } from "@/lib/stripe/server";
+import { publicOrigin } from "@/lib/http/public-url";
 import type { Plano } from "@/lib/types";
 
 /** Cria uma Stripe Checkout Session para o plano escolhido pelo profissional. */
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       .eq("id", user.id);
   }
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  const site = publicOrigin(request);
 
   const session = await stripe.checkout.sessions.create({
     customer: customerId,

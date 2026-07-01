@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { publicOrigin } from "@/lib/http/public-url";
 
 /**
  * Callback de Exclusão de Dados (exigido pela Meta para Login do Facebook/Instagram).
@@ -27,7 +28,7 @@ function parseSignedRequest(signed: string, secret: string): { user_id?: string 
 }
 
 export async function POST(request: Request) {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  const site = publicOrigin(request);
   let signed = "";
   try {
     const form = await request.formData();

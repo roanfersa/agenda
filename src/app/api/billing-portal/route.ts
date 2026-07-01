@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe/server";
+import { publicOrigin } from "@/lib/http/public-url";
 
 /** Abre o portal do cliente Stripe pro profissional gerenciar/cancelar. */
 export async function POST(request: Request) {
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Sem assinatura ativa." }, { status: 400 });
   }
 
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  const site = publicOrigin(request);
   const session = await stripe.billingPortal.sessions.create({
     customer: prof.stripe_customer_id,
     return_url: `${site}/planos`,
