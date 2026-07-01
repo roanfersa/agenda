@@ -150,7 +150,7 @@ export type SubscriptionRow = {
   professional_id: string;
   plano: Plano;
   valor: number;
-  ciclo: "mensal" | "unico";
+  ciclo: "mensal" | "anual" | "unico";
   status: "em_dia" | "atrasado" | "cancelado" | "trial";
   stripe_subscription_id: string | null;
   current_period_end: string | null;
