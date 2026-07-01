@@ -35,6 +35,7 @@ export type ProfessionalRow = {
   cor: string;
   whatsapp: string;
   google_calendar: { conectado: boolean; email: string; calendarId: string };
+  agenda_metodo: string;
   calendly_url: string;
   plano: Plano;
   trial_ends_at: string | null;
@@ -64,6 +65,7 @@ export type FunnelRow = {
   perguntas: Question[];
   consentimento_texto: string;
   status: FunnelStatus;
+  page_mode: string;
   flow_preset: FlowPreset;
   theme: Partial<FunnelTheme>;
   blocks: FunnelBlock[];

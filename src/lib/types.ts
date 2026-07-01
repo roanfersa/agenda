@@ -11,6 +11,7 @@ export type SetupStatus =
   | "aguardando_cliente"
   | "concluido";
 export type LgpdTipo = "acesso" | "correcao" | "exclusao";
+export type AgendaMetodo = "nativa" | "google" | "calendly";
 
 export type Question = {
   id: string;
@@ -27,6 +28,7 @@ export type ContextoItem = {
 };
 
 export type FlowPreset = "bio_quiz" | "agendamento" | "captura" | "qualificar";
+export type PageMode = "pagina" | "conversa";
 
 export type SocialLink = { rede: string; url: string };
 
@@ -44,10 +46,13 @@ export type FunnelTheme = {
 
 export type FunnelBlock =
   | { id: string; tipo: "funil"; titulo: string; cta: string }
-  | { id: string; tipo: "link"; titulo: string; url: string; emoji?: string }
-  | { id: string; tipo: "oferta"; titulo: string; descricao?: string; preco?: string; url: string; emoji?: string }
-  | { id: string; tipo: "recurso"; titulo: string; descricao?: string; url: string; emoji?: string }
+  | { id: string; tipo: "link"; titulo: string; url: string; emoji?: string; imagemUrl?: string }
+  | { id: string; tipo: "oferta"; titulo: string; descricao?: string; preco?: string; url: string; emoji?: string; imagemUrl?: string }
+  | { id: string; tipo: "recurso"; titulo: string; descricao?: string; url: string; emoji?: string; imagemUrl?: string }
   | { id: string; tipo: "recomendador"; titulo: string; cta: string }
+  | { id: string; tipo: "whatsapp"; titulo: string; numero: string; descricao?: string; cta?: string }
+  | { id: string; tipo: "embed"; provedor: "spotify" | "youtube" | "generico"; url: string; titulo?: string }
+  | { id: string; tipo: "instagram"; titulo?: string }
   | { id: string; tipo: "social"; links: SocialLink[] }
   | { id: string; tipo: "texto"; texto: string };
 
@@ -67,6 +72,8 @@ export type Produto = {
   id?: string;
   tipo?: RecursoTipo;
   emoji?: string;
+  /** Imagem do card (carrossel "Como posso te ajudar"). */
+  imagemUrl?: string;
   ativo?: boolean;
   /** PDF: conteúdo lido/resumido pela IA (cache). */
   conteudo?: string;
@@ -106,6 +113,8 @@ export type Funnel = {
   consentimentoTexto: string;
   status: FunnelStatus;
   // Bio-link SaaS:
+  /** Modo da página pública: "pagina" (blocos + entrada de chat) ou "conversa" (IA de cara). */
+  pageMode: PageMode;
   flowPreset: FlowPreset;
   theme: FunnelTheme;
   blocks: FunnelBlock[];
@@ -136,7 +145,9 @@ export type Professional = {
   cor: string;
   whatsapp: string;
   googleCalendar: { conectado: boolean; email: string; calendarId: string };
-  /** Link do Calendly (se preenchido, o funil usa o Calendly no lugar da agenda nativa). */
+  /** Método de agenda que o funil usa: nativa (disponibilidade própria), Google ou Calendly. */
+  agendaMetodo?: AgendaMetodo;
+  /** Link do Calendly (usado quando agendaMetodo === "calendly"). */
   calendlyUrl: string;
   plano: Plano;
   /** Fim do período de trial (ISO). Enquanto futuro, o profissional tem acesso full ("pro"). */
