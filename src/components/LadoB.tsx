@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Icon } from "./Icon";
 import { Avatar, Button, Field, TypingDots } from "./ui";
+import { AiFunnelChat } from "./AiFunnelChat";
 import { fmtWhats, OBJ, useStore, waLink } from "@/lib/store";
 import { DEFAULT_THEME, type Disponibilidade, type Funnel, type FunnelBlock, type Objetivo, type Professional, type Recurso, type Resposta } from "@/lib/types";
 
@@ -424,7 +425,7 @@ function PrivacySheet({
 }
 
 /* ---- Blocos estilo Linktree (renderizados no fim do fluxo) -------------- */
-function BlocksSection({ blocks, recursos, whatsapp }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string }) {
+function BlocksSection({ blocks, recursos, whatsapp, onRecomendador }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string; onRecomendador?: () => void }) {
   const card = (children: React.ReactNode, href?: string, key?: string) => {
     const inner = (
       <div
@@ -492,6 +493,34 @@ function BlocksSection({ blocks, recursos, whatsapp }: { blocks: FunnelBlock[]; 
             </p>
           );
         }
+        if (b.tipo === "recomendador") {
+          return (
+            <button
+              key={b.id}
+              onClick={onRecomendador}
+              style={{
+                width: "100%",
+                background: "var(--accent)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 14,
+                padding: "14px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                boxShadow: "0 1px 3px rgba(21,33,28,.06)",
+                cursor: "pointer",
+              }}
+            >
+              <span style={{ fontSize: 20 }}>✨</span>
+              <span style={{ flex: 1, textAlign: "left", minWidth: 0 }}>
+                <span style={{ display: "block", fontWeight: 700, fontSize: 14.5 }}>{b.cta || "Me ajude a escolher"}</span>
+                {b.titulo && <span style={{ display: "block", fontSize: 12.5, opacity: 0.9 }}>{b.titulo}</span>}
+              </span>
+              <Icon name="arrowRight" size={16} />
+            </button>
+          );
+        }
         // link | oferta | recurso | funil
         const titulo = "titulo" in b ? b.titulo : "";
         const descricao = "descricao" in b ? b.descricao : undefined;
@@ -539,6 +568,7 @@ export function LadoB({
   const professional = professionalOverride || storeProfessional;
   const disponibilidade = disponibilidadeOverride || storeDispo;
   const funnel = funnelOverride || storeFunnel;
+  const [chatAberto, setChatAberto] = React.useState(false);
   const theme = { ...DEFAULT_THEME, ...(funnel.theme || {}) };
   const blocks: FunnelBlock[] = funnel.blocks || [];
   const objetivo: Objetivo = objOverride || funnel.objetivo || "agendar";
@@ -973,6 +1003,23 @@ export function LadoB({
     );
   }
 
+  // Recomendador: abre o funil conversacional por IA em tela cheia.
+  if (chatAberto) {
+    return (
+      <div style={{ minHeight: "100dvh", background: theme.bgColor || "var(--bg)", display: "flex", flexDirection: "column" }}>
+        <button
+          onClick={() => setChatAberto(false)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--muted)", fontWeight: 700, fontSize: 13.5, padding: "12px 16px", alignSelf: "flex-start", background: "transparent", border: "none", cursor: "pointer" }}
+        >
+          <Icon name="arrowLeft" size={16} /> Voltar
+        </button>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <AiFunnelChat funnel={funnel} professional={professional} disponibilidade={disponibilidade} onSubmitLead={onSubmitLead} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -1041,7 +1088,7 @@ export function LadoB({
             </div>
           )}
           {(blocks.length > 0 || (professional.produtos || []).some((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")) && (
-            <BlocksSection blocks={blocks} recursos={professional.produtos || []} whatsapp={professional.whatsapp} />
+            <BlocksSection blocks={blocks} recursos={professional.produtos || []} whatsapp={professional.whatsapp} onRecomendador={() => setChatAberto(true)} />
           )}
         </div>
         {composer && (
