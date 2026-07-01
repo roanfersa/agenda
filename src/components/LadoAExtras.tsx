@@ -6,9 +6,10 @@ import { Avatar, Badge, Button, Card, SectionLabel } from "./ui";
 import { AutomacaoEditor } from "./AutomacaoEditor";
 import { CommentDMSim } from "./CommentDMSim";
 import { Overlay, funnelUrl, ConfirmModal } from "./shared";
-import { OBJ, useStore } from "@/lib/store";
+import { OBJ, OBJETIVOS, useStore } from "@/lib/store";
+import { presetQuestions } from "@/lib/flow-presets";
 import { hasFeature } from "@/lib/features";
-import type { Automation, Funnel } from "@/lib/types";
+import type { Automation, FlowPreset, Funnel, Objetivo } from "@/lib/types";
 
 /** Cartão de "recurso bloqueado" reutilizável quando a flag está off. */
 function RecursoBloqueado({ titulo, descricao }: { titulo: string; descricao: string }) {
@@ -412,9 +413,57 @@ function FunilCard({ f, active, onEdit }: { f: Funnel; active: boolean; onEdit: 
   );
 }
 
-export function FunisList({ onEdit, onNew }: { onEdit: (id: string) => void; onNew: () => void }) {
+export function FunisList({ onEdit }: { onEdit: (id: string) => void; onNew?: () => void }) {
   const funnels = useStore((s) => s.funnels);
   const activeFunnelId = useStore((s) => s.activeFunnelId);
+  const addFunnel = useStore((s) => s.addFunnel);
+  const professional = useStore((s) => s.professional);
+  const toast = useStore((s) => s.toast);
+  const podeGerar = hasFeature(professional, "gerar_ia");
+  const recursos = (professional.produtos || []).filter((r) => r.ativo !== false);
+
+  const [novoAberto, setNovoAberto] = React.useState(false);
+  const [objetivo, setObjetivo] = React.useState<Objetivo>("agendar");
+  const [recursoId, setRecursoId] = React.useState<string>("");
+  const [gerando, setGerando] = React.useState(false);
+
+  const presetDe = (o: Objetivo): FlowPreset => (o === "agendar" ? "agendamento" : o === "qualificar" ? "qualificar" : "captura");
+
+  const criarFunil = async () => {
+    if (gerando) return;
+    setGerando(true);
+    const obj = OBJ(objetivo);
+    const alvo = recursos.find((r) => r.id === recursoId);
+    const nome = alvo ? `Funil — ${alvo.nome}` : `Funil de ${obj.curto.toLowerCase()}`;
+    const preset = presetDe(objetivo);
+    let built: Partial<Funnel> = { nome, objetivo, flowPreset: preset };
+    if (podeGerar) {
+      try {
+        const res = await fetch("/api/ai/funnel-generator", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ objetivo, recursoId: recursoId || undefined }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          built = { ...built, mensagemBoasVindas: data.mensagemBoasVindas || "", perguntas: data.perguntas || [], consentimentoTexto: data.consentimentoTexto || "" };
+        } else {
+          toast(data.error || "IA indisponível — criei um funil base.");
+          built = { ...built, perguntas: presetQuestions(preset) };
+        }
+      } catch {
+        toast("Erro na IA — criei um funil base.");
+        built = { ...built, perguntas: presetQuestions(preset) };
+      }
+    } else {
+      built = { ...built, perguntas: presetQuestions(preset) };
+    }
+    const id = addFunnel(built);
+    setGerando(false);
+    setNovoAberto(false);
+    onEdit(id);
+  };
+
   return (
     <div style={{ padding: "0 18px" }}>
       <div
@@ -438,7 +487,7 @@ export function FunisList({ onEdit, onNew }: { onEdit: (id: string) => void; onN
         </span>
       </div>
       <button
-        onClick={onNew}
+        onClick={() => setNovoAberto(true)}
         style={{
           width: "100%",
           display: "flex",
@@ -465,6 +514,60 @@ export function FunisList({ onEdit, onNew }: { onEdit: (id: string) => void; onN
           <FunilCard key={f.id} f={f} active={f.id === activeFunnelId} onEdit={() => onEdit(f.id)} />
         ))}
       </div>
+
+      {novoAberto && (
+        <Overlay
+          title="Novo funil"
+          sub={podeGerar ? "A IA monta um funil curto na hora — você ajusta depois." : "Escolha o objetivo — criamos um funil base pra você editar."}
+          onClose={() => !gerando && setNovoAberto(false)}
+        >
+          <div style={{ padding: "4px 2px" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)", marginBottom: 8 }}>PRA QUE É ESSE FUNIL?</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+              {OBJETIVOS.map((o) => (
+                <button
+                  key={o.id}
+                  onClick={() => setObjetivo(o.id)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10, textAlign: "left", padding: "11px 13px", borderRadius: 12,
+                    border: `1.5px solid ${objetivo === o.id ? "var(--accent)" : "var(--line)"}`,
+                    background: objetivo === o.id ? "var(--accent-050)" : "var(--card)",
+                  }}
+                >
+                  <Icon name={o.icon as never} size={18} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>{o.titulo}</span>
+                    <span style={{ display: "block", fontSize: 12, color: "var(--muted)" }}>{o.beneficio}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {recursos.length > 0 && (
+              <>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--muted)", marginBottom: 8 }}>RECURSO EM FOCO (OPCIONAL)</div>
+                <select
+                  value={recursoId}
+                  onChange={(e) => setRecursoId(e.target.value)}
+                  style={{ width: "100%", border: "1.5px solid var(--line)", borderRadius: 12, padding: "11px 12px", fontSize: 14, fontFamily: "var(--font)", color: "var(--ink)", background: "#fff", marginBottom: 18 }}
+                >
+                  <option value="">Nenhum específico</option>
+                  {recursos.map((r) => (
+                    <option key={r.id ?? r.nome} value={r.id ?? ""}>{r.nome || "(sem nome)"}</option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button variant="outline" onClick={() => !gerando && setNovoAberto(false)}>Cancelar</Button>
+              <Button full onClick={criarFunil} disabled={gerando} icon={podeGerar ? "bolt" : "plus"}>
+                {gerando ? "Criando…" : podeGerar ? "Criar com IA" : "Criar funil"}
+              </Button>
+            </div>
+          </div>
+        </Overlay>
+      )}
     </div>
   );
 }

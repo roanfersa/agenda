@@ -1,6 +1,6 @@
 import "server-only";
 import { getAnthropic, parseJson, textOf } from "./client";
-import type { Objetivo, Question } from "@/lib/types";
+import type { Objetivo, Produto, Question } from "@/lib/types";
 
 export type GeneratedFunnel = {
   mensagemBoasVindas: string;
@@ -19,6 +19,8 @@ export async function generateFunnel(input: {
   especialidade: string;
   nome: string;
   objetivo: Objetivo;
+  recursos?: Produto[];
+  recursoAlvo?: string;
 }): Promise<GeneratedFunnel> {
   const client = getAnthropic();
   if (!client) throw new Error("IA não configurada (defina ANTHROPIC_API_KEY).");
@@ -30,18 +32,28 @@ export async function generateFunnel(input: {
         ? "qualificar o lead pra um time de vendas"
         : "capturar o contato pra continuar no WhatsApp";
 
+  const ativos = (input.recursos ?? []).filter((r) => r.ativo !== false);
+  const recursosTxt = ativos.length
+    ? "\nRecursos disponíveis: " +
+      ativos.map((r) => `${r.nome} (${r.tipo ?? "link"})${r.descricao ? ` — ${r.descricao}` : ""}`).join("; ")
+    : "";
+  const alvoTxt = input.recursoAlvo ? `\nO funil deve levar ao recurso: "${input.recursoAlvo}".` : "";
+
   const msg = await client.messages.create({
     model: SONNET,
-    max_tokens: 1000,
+    max_tokens: 800,
     system:
-      "Você cria funis de conversão curtos e acolhedores pra profissionais autônomos no Brasil. " +
+      "Você cria funis de conversão CURTOS e objetivos pra profissionais autônomos no Brasil. " +
       "Responda SEMPRE em JSON válido, sem texto fora dele, no formato: " +
       '{"mensagemBoasVindas": string, "perguntas": [{"texto": string, "tipo": "opcoes"|"texto_livre", "opcoes"?: string[], "obrigatoria": boolean}], "consentimentoTexto": string}. ' +
-      "Use no máximo 4 perguntas, linguagem informal de WhatsApp (pt-BR), e um texto de consentimento LGPD curto.",
+      "Use NO MÁXIMO 2 perguntas (breves, 1 por vez), linguagem informal de WhatsApp (pt-BR), e um texto de consentimento LGPD curto. " +
+      "Não tome o tempo do lead — poucas perguntas e direto ao ponto.",
     messages: [
       {
         role: "user",
-        content: `Profissional: ${input.nome} — ${input.especialidade}. Objetivo do funil: ${objetivoDesc}.`,
+        content:
+          `Profissional: ${input.nome} — ${input.especialidade}. Objetivo do funil: ${objetivoDesc}.` +
+          `${recursosTxt}${alvoTxt}`,
       },
     ],
   });
@@ -55,7 +67,7 @@ export async function generateFunnel(input: {
   return {
     mensagemBoasVindas: parsed.mensagemBoasVindas ?? "",
     consentimentoTexto: parsed.consentimentoTexto ?? "",
-    perguntas: (parsed.perguntas ?? []).slice(0, 6).map((q, i) => ({
+    perguntas: (parsed.perguntas ?? []).slice(0, 2).map((q, i) => ({
       id: `q_${i}_${Math.random().toString(36).slice(2, 7)}`,
       texto: q.texto ?? "",
       tipo: q.tipo === "texto_livre" ? "texto_livre" : "opcoes",
