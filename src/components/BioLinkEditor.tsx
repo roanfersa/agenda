@@ -17,6 +17,7 @@ import {
   type FunnelTheme,
   type Material,
   type Produto,
+  type RecursoTipo,
 } from "@/lib/types";
 
 type Tab = "identidade" | "blocos" | "funil" | "produtos" | "previa";
@@ -75,6 +76,30 @@ export function BioLinkEditor() {
 
   // Funil "ao vivo" pra prévia (mescla edições locais).
   const previewFunnel = { ...funnel, theme, blocks, flowPreset };
+
+  // Lê o conteúdo de um PDF de recurso (mesma rota da biblioteca).
+  const extrairRecurso = async (id: string, url: string, titulo: string) => {
+    setAnalisando(id);
+    setProdutos((ps) => ps.map((x) => (x.id === id ? { ...x, status: "pendente" } : x)));
+    try {
+      const res = await fetch("/api/materials/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "arquivo", url, titulo, descricao: "" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.conteudo) {
+        setProdutos((ps) => ps.map((x) => (x.id === id ? { ...x, conteudo: data.conteudo, status: "pronto" } : x)));
+        toast("PDF lido ✓");
+      } else {
+        setProdutos((ps) => ps.map((x) => (x.id === id ? { ...x, status: "erro" } : x)));
+      }
+    } catch {
+      setProdutos((ps) => ps.map((x) => (x.id === id ? { ...x, status: "erro" } : x)));
+    } finally {
+      setAnalisando(null);
+    }
+  };
 
   const salvarBiblioteca = () => updateProfessional({ produtos, materiais });
   const salvar = () => {
@@ -179,7 +204,7 @@ export function BioLinkEditor() {
     ["identidade", "Identidade"],
     ["blocos", "Blocos"],
     ["funil", "Funil"],
-    ["produtos", "Biblioteca"],
+    ["produtos", "Recursos"],
     ["previa", "Prévia"],
   ];
 
@@ -339,21 +364,72 @@ export function BioLinkEditor() {
               <div style={{ background: "var(--accent-050)", borderRadius: 10, padding: "10px 12px", fontSize: 12.5, color: "var(--accent-800)", fontWeight: 600 }}>
                 📚 Esta biblioteca é da sua conta — fica salva e é reutilizada em todos os seus links e pela IA.
               </div>
-              <SectionLabel>Produtos & ofertas</SectionLabel>
-              {produtos.map((p, i) => (
-                <Card key={i}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <Field value={p.nome} onChange={(v) => setProdutos((ps) => ps.map((x, k) => k === i ? { ...x, nome: v } : x))} placeholder="Nome" />
-                    <Field as="textarea" value={p.descricao} onChange={(v) => setProdutos((ps) => ps.map((x, k) => k === i ? { ...x, descricao: v } : x))} placeholder="Descrição" />
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <Field value={p.preco || ""} onChange={(v) => setProdutos((ps) => ps.map((x, k) => k === i ? { ...x, preco: v } : x))} placeholder="Preço" />
-                      <Field value={p.link || ""} onChange={(v) => setProdutos((ps) => ps.map((x, k) => k === i ? { ...x, link: v } : x))} placeholder="Link" />
+              <SectionLabel>Recursos</SectionLabel>
+              <p style={{ fontSize: 12.5, color: "var(--muted)" }}>As formas de acesso que você oferece: link, agendamento, PDF ou WhatsApp. Viram botões na sua bio e a IA recomenda o mais adequado.</p>
+              {produtos.map((p, i) => {
+                const tipo = (p.tipo ?? "link") as RecursoTipo;
+                const setP = (patch: Partial<Produto>) => setProdutos((ps) => ps.map((x, k) => (k === i ? { ...x, ...patch } : x)));
+                return (
+                  <Card key={p.id ?? i}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                      <select
+                        value={tipo}
+                        onChange={(e) => setP({ tipo: e.target.value as RecursoTipo })}
+                        style={{ fontSize: 12.5, fontWeight: 700, border: "1px solid var(--line)", borderRadius: 8, padding: "5px 8px", color: "var(--ink)", background: "#fff" }}
+                      >
+                        <option value="link">Link</option>
+                        <option value="agenda">Agendamento</option>
+                        <option value="pdf">PDF</option>
+                        <option value="whatsapp">WhatsApp</option>
+                      </select>
+                      <div style={{ flex: 1 }} />
+                      <label style={{ fontSize: 12, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        <input type="checkbox" checked={p.ativo !== false} onChange={(e) => setP({ ativo: e.target.checked })} /> ativo
+                      </label>
+                      <button onClick={() => setProdutos((ps) => ps.filter((_, k) => k !== i))} style={{ color: "var(--danger)" }}><Icon name="trash" size={16} /></button>
                     </div>
-                    <button onClick={() => setProdutos((ps) => ps.filter((_, k) => k !== i))} style={{ fontSize: 12.5, color: "var(--danger)", fontWeight: 600, textAlign: "left" }}>Remover</button>
-                  </div>
-                </Card>
-              ))}
-              <Button size="sm" variant="outline" icon="plus" onClick={() => setProdutos((ps) => [...ps, { nome: "", descricao: "" }])}>Adicionar produto</Button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <div style={{ width: 64 }}><Field value={p.emoji || ""} onChange={(v) => setP({ emoji: v })} placeholder="🔗" /></div>
+                        <Field value={p.nome} onChange={(v) => setP({ nome: v })} placeholder="Nome do recurso" />
+                      </div>
+                      <Field as="textarea" value={p.descricao} onChange={(v) => setP({ descricao: v })} placeholder="Descrição (a IA usa pra recomendar)" />
+                      {tipo === "link" && <Field value={p.link || ""} onChange={(v) => setP({ link: v })} placeholder="URL do link" />}
+                      {tipo === "pdf" && (
+                        p.link ? (
+                          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                            <a href={p.link} target="_blank" rel="noopener" style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700 }}>Ver PDF</a>
+                            <span style={{ fontSize: 12, color: p.status === "pronto" ? "var(--accent)" : p.status === "erro" ? "var(--danger)" : "var(--muted)" }}>
+                              {analisando === p.id ? "Lendo…" : p.status === "pronto" ? "Conteúdo lido ✓" : p.status === "erro" ? "Falha na leitura" : ""}
+                            </span>
+                            <button onClick={() => setP({ link: "" })} style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>trocar</button>
+                          </div>
+                        ) : (
+                          <label style={{ fontSize: 12.5, color: "var(--accent)", fontWeight: 700, cursor: "pointer" }}>
+                            {uploading === p.id ? "Enviando…" : "Enviar PDF"}
+                            <input type="file" hidden accept=".pdf" onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const rid = p.id ?? uuid();
+                              setUploading(rid);
+                              try {
+                                const url = await uploadFile("contexto", professional.id, file);
+                                setProdutos((ps) => ps.map((x, k) => (k === i ? { ...x, id: rid, link: url, nome: x.nome || file.name } : x)));
+                                setUploading(null);
+                                extrairRecurso(rid, url, p.nome || file.name);
+                              } catch { toast("Falha no upload"); setUploading(null); }
+                            }} />
+                          </label>
+                        )
+                      )}
+                      {tipo === "agenda" && <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Usa sua agenda configurada (disponibilidade / Calendly / Google) no fluxo do funil.</p>}
+                      {tipo === "whatsapp" && <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Leva a conversa pro seu WhatsApp ({professional.whatsapp || "configure em Ajustes"}).</p>}
+                      {(tipo === "link" || tipo === "pdf") && <Field value={p.preco || ""} onChange={(v) => setP({ preco: v })} placeholder="Preço (opcional)" />}
+                    </div>
+                  </Card>
+                );
+              })}
+              <Button size="sm" variant="outline" icon="plus" onClick={() => setProdutos((ps) => [...ps, { id: uuid(), tipo: "link", nome: "", descricao: "", ativo: true }])}>Adicionar recurso</Button>
 
               <SectionLabel style={{ marginTop: 10 }}>Materiais de referência</SectionLabel>
               <p style={{ fontSize: 12.5, color: "var(--muted)" }}>Arquivos (PDF, tabela de preços…), notas ou links que descrevem seu contexto. A IA usa pra entender seu trabalho.</p>
