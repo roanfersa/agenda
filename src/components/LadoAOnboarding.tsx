@@ -36,11 +36,17 @@ function periodPicks(periodo: string | null): string[] {
   return ["Manhã", "Tarde", "Noite"];
 }
 
-function iaFunnel(objetivo: Objetivo, extras: { atende: string | null; periodo: string | null }) {
-  const { atende, periodo } = extras;
+function iaFunnel(
+  objetivo: Objetivo,
+  extras: { atende: string | null; periodo: string | null; nome?: string }
+) {
+  const { atende, periodo, nome } = extras;
+  const primeiroNome = (nome || "").trim().split(" ")[0];
   const base: Record<Objetivo, { welcome: string; qs: { texto: string; opcoes: string[] }[] }> = {
     agendar: {
-      welcome: "Oi! Sou o Osvaldo 🌿 Me responde rapidinho pra eu entender como posso te ajudar e já deixar tudo pronto.",
+      welcome: primeiroNome
+        ? `Oi! Sou o ${primeiroNome} 🌿 Me responde rapidinho pra eu entender como posso te ajudar e já deixar tudo pronto.`
+        : "Oi! 🌿 Me responde rapidinho pra eu entender como posso te ajudar e já deixar tudo pronto.",
       qs: [
         { texto: "O que te interessa?", opcoes: ["Primeira sessão", "Retorno", "Só tirar uma dúvida"] },
         ...(atende === "ambos" || !atende ? [{ texto: "Prefere como?", opcoes: ["Online", "Presencial"] }] : []),
@@ -306,14 +312,16 @@ export function LadoAOnboarding({
   const isNovo = mode === "novo";
 
   const [step, setStep] = React.useState(0);
-  const [bio, setBio] = React.useState(isNovo ? "" : "Sou terapeuta tântrico e atendo ansiedade e autoconhecimento.");
+  const [bio, setBio] = React.useState(isNovo ? "" : professional.especialidade || "");
   const [handle, setHandle] = React.useState(professional.handleInstagram);
   const [objetivo, setObjetivo] = React.useState<Objetivo>("agendar");
   const [metodo, setMetodo] = React.useState<"ia" | "manual">("ia");
   const [generating, setGenerating] = React.useState(false);
   const [built, setBuilt] = React.useState<{ welcome: string; questions: QFull[] } | null>(null);
   const [cal, setCal] = React.useState({ connecting: false, done: professional.googleCalendar.conectado });
-  const [whats, setWhats] = React.useState("(11) 9 9887-7665");
+  const [whats, setWhats] = React.useState(
+    professional.whatsapp ? professional.whatsapp.replace(/\D/g, "").replace(/^55/, "") : ""
+  );
   const [nome, setNome] = React.useState(professional.nome);
   const [contexto, setContexto] = React.useState<ContextoItem[]>(isNovo ? [] : funnel.contexto || []);
   const [funilNome, setFunilNome] = React.useState(isNovo ? "" : funnel.nome || "");
@@ -356,7 +364,7 @@ export function LadoAOnboarding({
           const data = await res.json();
           if (cancel) return;
           if (res.ok && Array.isArray(data.perguntas) && data.perguntas.length) {
-            const fb = iaFunnel(objetivo, preIA);
+            const fb = iaFunnel(objetivo, { ...preIA, nome: professional.nome });
             setBuilt({
               welcome: data.mensagemBoasVindas || fb.welcome,
               questions: data.perguntas.map((q: { id: string; texto: string; tipo: "opcoes" | "texto_livre"; opcoes?: string[]; obrigatoria: boolean }) => ({
@@ -369,10 +377,10 @@ export function LadoAOnboarding({
               })),
             });
           } else {
-            setBuilt(iaFunnel(objetivo, preIA)); // fallback: heurística local
+            setBuilt(iaFunnel(objetivo, { ...preIA, nome: professional.nome })); // fallback: heurística local
           }
         } catch {
-          if (!cancel) setBuilt(iaFunnel(objetivo, preIA));
+          if (!cancel) setBuilt(iaFunnel(objetivo, { ...preIA, nome: professional.nome }));
         } finally {
           if (!cancel) setGenerating(false);
         }

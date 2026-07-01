@@ -88,10 +88,22 @@ export function resolveFeatures(
   return out;
 }
 
-/** Booleano efetivo de uma feature para um profissional. */
+/**
+ * Plano EFETIVO considerando o trial:
+ * - assinante ("pro") = full;
+ * - em trial (trialEndsAt no futuro) = full ("pro");
+ * - trial expirado sem assinar = "entrada" (restrito).
+ */
+export function planoEfetivo(p: { plano: Plano; trialEndsAt?: string }): Plano {
+  if (p.plano === "pro") return "pro";
+  if (p.trialEndsAt && new Date(p.trialEndsAt).getTime() > Date.now()) return "pro";
+  return "entrada";
+}
+
+/** Booleano efetivo de uma feature para um profissional (respeita trial). */
 export function hasFeature(
-  professional: { plano: Plano; featureFlags?: FeatureOverrides },
+  professional: { plano: Plano; trialEndsAt?: string; featureFlags?: FeatureOverrides },
   key: FeatureKey,
 ): boolean {
-  return resolveFeatures(professional.plano, professional.featureFlags ?? {})[key];
+  return resolveFeatures(planoEfetivo(professional), professional.featureFlags ?? {})[key];
 }

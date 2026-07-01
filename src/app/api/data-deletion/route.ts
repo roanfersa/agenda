@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Callback de Exclusão de Dados (exigido pela Meta para Login do Facebook/Instagram).
@@ -41,7 +42,19 @@ export async function POST(request: Request) {
 
   // O pedido de exclusão fica registrado; a remoção efetiva segue a Política de Privacidade.
   // (Profissionais também podem desconectar a conta a qualquer momento em Automações.)
-  console.log(`[data-deletion] pedido recebido user_id=${userId} code=${code}`);
+  console.log("[data-deletion] pedido recebido");
+
+  // Enfileira o pedido de exclusão na fila LGPD (service role) para tratamento interno.
+  try {
+    const db = createAdminClient();
+    await db.from("lgpd_requests").insert({
+      tipo: "exclusao",
+      status: "pendente",
+      lead_nome: `Meta user_id ${userId}`,
+    });
+  } catch {
+    // Não bloqueia a resposta à Meta se o registro falhar.
+  }
 
   return NextResponse.json({ url: `${site}/exclusao-de-dados?code=${code}`, confirmation_code: code });
 }

@@ -139,6 +139,8 @@ export type Professional = {
   /** Link do Calendly (se preenchido, o funil usa o Calendly no lugar da agenda nativa). */
   calendlyUrl: string;
   plano: Plano;
+  /** Fim do período de trial (ISO). Enquanto futuro, o profissional tem acesso full ("pro"). */
+  trialEndsAt?: string;
   avisos: { email: boolean; push: boolean };
   consentimentoTextoPadrao: string;
   /** Overrides de feature flags definidos pelo admin (default vem do plano). */

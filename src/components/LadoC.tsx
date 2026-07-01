@@ -5,13 +5,41 @@ import { useRouter, usePathname } from "next/navigation";
 import { Icon, type IconName } from "./Icon";
 import { Avatar, Badge, Button, EmptyState, Field, SectionLabel } from "./ui";
 import { DeskCard, Logo, PageHead, Td, Th, ConfirmModal, dataCurta } from "./shared";
-import { OBJ, useStore } from "@/lib/store";
+import { useStore } from "@/lib/store";
 import { useAdminData } from "@/hooks/useAdminData";
 import { FEATURES, resolveFeatures, PLAN_DEFAULTS } from "@/lib/features";
 import { setFeatureFlagAction, setPlanAction, grantInternalAction } from "@/lib/actions/admin";
-import type { OtherPro, Professional, Funnel, Plano } from "@/lib/types";
+import type { OtherPro, Plano } from "@/lib/types";
+import type { AdminData } from "@/lib/data/admin-bootstrap";
 
 const PLANOS: Plano[] = ["entrada", "pro", "setup"];
+
+/** Campos agregados no server que não trafegam pelo store (mrr, crescimento, etc). */
+type AdminExtras = Pick<AdminData, "mrr" | "crescimento" | "agendadosPorPro" | "alertas">;
+
+/** Busca (uma vez, com cache) os campos calculados do bootstrap admin. */
+function useAdminExtras(): AdminExtras | null {
+  const [extras, setExtras] = React.useState<AdminExtras | null>(null);
+  React.useEffect(() => {
+    let alive = true;
+    fetch("/api/admin/bootstrap", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: AdminData | null) => {
+        if (!alive || !d) return;
+        setExtras({
+          mrr: d.mrr,
+          crescimento: d.crescimento,
+          agendadosPorPro: d.agendadosPorPro,
+          alertas: d.alertas,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return extras;
+}
 
 /** Seletor de plano + toggles de feature flags de um profissional (admin). */
 function FuncionalidadesCard({ proId, planoInicial }: { proId: string; planoInicial: Plano }) {
@@ -417,10 +445,17 @@ function Metric({
   );
 }
 
-function GrowthChart() {
-  const data = [12, 18, 23, 29, 38, 44, 51, 58, 67, 79, 92, 104];
-  const meses = ["jul", "ago", "set", "out", "nov", "dez", "jan", "fev", "mar", "abr", "mai", "jun"];
-  const max = 110,
+function GrowthChart({ data, meses, deltaLabel }: { data: number[]; meses: string[]; deltaLabel?: string }) {
+  if (data.length < 2) {
+    return (
+      <DeskCard>
+        <div style={{ fontSize: 13, color: "var(--muted)", padding: "24px 4px", textAlign: "center" }}>
+          Carregando crescimento…
+        </div>
+      </DeskCard>
+    );
+  }
+  const max = Math.max(10, ...data) * 1.1,
     W = 640,
     H = 180,
     pad = 8;
@@ -434,9 +469,11 @@ function GrowthChart() {
           <h3 style={{ fontSize: 16 }}>Profissionais ao longo do tempo</h3>
           <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 2 }}>Últimos 12 meses</div>
         </div>
-        <Badge bg="var(--accent-100)" fg="var(--accent-800)">
-          +18% no mês
-        </Badge>
+        {deltaLabel && (
+          <Badge bg="var(--accent-100)" fg="var(--accent-800)">
+            {deltaLabel}
+          </Badge>
+        )}
       </div>
       <svg viewBox={`0 0 ${W} ${H + 18}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 8 }}>
         <defs>
@@ -533,20 +570,44 @@ function AlertItem({
 export function Overview() {
   const router = useRouter();
   const otherPros = useStore((s) => s.otherPros);
-  const ativos = otherPros.filter((p) => p.status === "ativo").length + 1;
+  const setups = useStore((s) => s.setups);
+  const extras = useAdminExtras();
   const openPro = (id: string) => router.push(`/admin/profissionais/${id}`);
+
+  const ativos = otherPros.filter((p) => p.status === "ativo").length;
+  const cresc = extras?.crescimento.valores ?? [];
+  const novosMes = cresc.length ? cresc[cresc.length - 1] : 0;
+  const mesAnterior = cresc.length > 1 ? cresc[cresc.length - 2] : 0;
+  const deltaPct =
+    mesAnterior > 0 ? Math.round(((novosMes - mesAnterior) / mesAnterior) * 100) : null;
+  const deltaLabel = deltaPct !== null ? `${deltaPct >= 0 ? "+" : ""}${deltaPct}% no mês` : undefined;
+  const setupsFila = setups.filter((s) => s.status !== "concluido").length;
+  const leadsSemana = otherPros.reduce((a, p) => a + p.leads, 0);
+  const alertas = extras?.alertas ?? [];
+  const lgpdRoute = () => router.push("/admin/lgpd");
+  const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
+
   return (
     <div>
-      <PageHead title="Visão geral" sub="Sexta, 13 de junho de 2026" />
+      <PageHead title="Visão geral" sub={hoje.charAt(0).toUpperCase() + hoje.slice(1)} />
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 22 }}>
-        <Metric icon="users" value={ativos} label="Profissionais ativos" delta="+18%" tone="accent" />
-        <Metric icon="money" value="R$ 9.847" label="MRR estimado" delta="+12%" tone="ink" />
-        <Metric icon="sparkles" value="14" label="Novos no mês" tone="info" />
-        <Metric icon="bolt" value="2" label="Setups na fila" tone="amber" />
-        <Metric icon="chat" value="312" label="Leads (semana)" tone="accent" />
+        <Metric icon="users" value={ativos} label="Profissionais ativos" delta={deltaLabel} tone="accent" />
+        <Metric
+          icon="money"
+          value={`R$ ${(extras?.mrr ?? 0).toLocaleString("pt-BR")}`}
+          label="MRR estimado"
+          tone="ink"
+        />
+        <Metric icon="sparkles" value={novosMes} label="Novos no mês" tone="info" />
+        <Metric icon="bolt" value={setupsFila} label="Setups na fila" tone="amber" />
+        <Metric icon="chat" value={leadsSemana} label="Leads (total)" tone="accent" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 18, alignItems: "start" }}>
-        <GrowthChart />
+        <GrowthChart
+          data={extras?.crescimento.valores ?? []}
+          meses={extras?.crescimento.meses ?? []}
+          deltaLabel={deltaLabel}
+        />
         <DeskCard>
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
             <span style={{ color: "var(--amber)" }}>
@@ -554,71 +615,36 @@ export function Overview() {
             </span>
             <h3 style={{ fontSize: 16 }}>Alertas operacionais</h3>
           </div>
-          <AlertItem
-            tone="danger"
-            icon="card"
-            title="Pagamento falhou"
-            sub="Renata Aragão · Entrada R$97"
-            action="Ver"
-            onAction={() => openPro("pro_renata")}
-          />
-          <AlertItem
-            tone="amber"
-            icon="calendar"
-            title="Sem agenda conectada"
-            sub="Thiago Barros · há 5 dias"
-            action="Ver"
-            onAction={() => openPro("pro_thiago")}
-          />
-          <AlertItem
-            tone="info"
-            icon="funnel"
-            title="Funil sem leads há 9 dias"
-            sub="Sandra Vidal · risco de churn"
-            action="Ver"
-            onAction={() => openPro("pro_sandra")}
-          />
-          <AlertItem
-            tone="amber"
-            icon="shield"
-            title="2 pedidos LGPD pendentes"
-            sub="Prazo mais próximo: 18/06"
-            action="Abrir"
-            onAction={() => router.push("/admin/lgpd")}
-          />
+          {alertas.length === 0 ? (
+            <div style={{ fontSize: 13.5, color: "var(--muted)", padding: "16px 0" }}>
+              Nenhum alerta no momento.
+            </div>
+          ) : (
+            alertas.map((a, i) => (
+              <AlertItem
+                key={`${a.professionalId}-${i}`}
+                tone={a.tone}
+                icon={a.icon as IconName}
+                title={a.title}
+                sub={a.label}
+                action="Ver"
+                onAction={() => openPro(a.professionalId)}
+              />
+            ))
+          )}
         </DeskCard>
       </div>
     </div>
   );
 }
 
-/* ---- helpers ----------------------------------------------------------- */
-function buildPros(professional: Professional, leadsCount: number, agendaConn: boolean, otherPros: OtherPro[]): (OtherPro & { id: string })[] {
-  return [
-    {
-      id: "pro_osvaldo",
-      nome: professional.nome,
-      handleInstagram: professional.handleInstagram,
-      especialidade: professional.especialidade,
-      plano: "entrada",
-      status: "ativo",
-      agenda: agendaConn,
-      leads: leadsCount,
-      criadoEm: professional.criadoEm,
-    },
-    ...otherPros,
-  ];
-}
-
 /* ---- Profissionais ----------------------------------------------------- */
 export function Profissionais() {
   const router = useRouter();
-  const professional = useStore((s) => s.professional);
-  const leads = useStore((s) => s.leads);
   const otherPros = useStore((s) => s.otherPros);
   const [status, setStatus] = React.useState<string>("todos");
   const [q, setQ] = React.useState("");
-  const all = buildPros(professional, leads.length, professional.googleCalendar.conectado, otherPros);
+  const all: OtherPro[] = otherPros;
   let rows = all;
   if (status !== "todos") rows = rows.filter((r) => r.status === status);
   if (q.trim()) rows = rows.filter((r) => (r.nome + r.handleInstagram).toLowerCase().includes(q.toLowerCase()));
@@ -740,76 +766,6 @@ export function Profissionais() {
   );
 }
 
-/* ---- FunnelPreview ----------------------------------------------------- */
-function FunnelPreview({ funnel, pro }: { funnel: Funnel | { mensagemBoasVindas: string; perguntas: { texto: string; opcoes?: string[] }[] }; pro: { nome: string; especialidade: string } }) {
-  return (
-    <div style={{ background: "#EBE7DF", borderRadius: 16, padding: 14, border: "1px solid var(--line)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
-        <Avatar name={pro.nome} size={32} />
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 13.5, color: "var(--ink)" }}>{pro.nome}</div>
-          <div style={{ fontSize: 11, color: "var(--muted)" }}>{pro.especialidade}</div>
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div
-          style={{
-            alignSelf: "flex-start",
-            maxWidth: "88%",
-            background: "#fff",
-            padding: "9px 12px",
-            borderRadius: 14,
-            borderBottomLeftRadius: 4,
-            fontSize: 13,
-            color: "var(--ink)",
-            lineHeight: 1.4,
-            boxShadow: "var(--sh-sm)",
-          }}
-        >
-          {funnel.mensagemBoasVindas}
-        </div>
-        {funnel.perguntas[0] && (
-          <div
-            style={{
-              alignSelf: "flex-start",
-              maxWidth: "88%",
-              background: "#fff",
-              padding: "9px 12px",
-              borderRadius: 14,
-              borderBottomLeftRadius: 4,
-              fontSize: 13,
-              color: "var(--ink)",
-              boxShadow: "var(--sh-sm)",
-            }}
-          >
-            {funnel.perguntas[0].texto}
-          </div>
-        )}
-        {funnel.perguntas[0]?.opcoes && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "flex-end" }}>
-            {funnel.perguntas[0].opcoes.map((o, i) => (
-              <span
-                key={i}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "var(--accent-800)",
-                  background: "#fff",
-                  border: "1.5px solid var(--accent-200)",
-                  padding: "6px 11px",
-                  borderRadius: 16,
-                }}
-              >
-                {o}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /* ---- Detalhe da conta ------------------------------------------------- */
 function ActionBtn({
   icon,
@@ -867,19 +823,29 @@ function InfoRow({ label, value, last }: { label: string; value: React.ReactNode
 
 export function DetalheConta({ proId }: { proId: string }) {
   const router = useRouter();
-  const professional = useStore((s) => s.professional);
-  const leads = useStore((s) => s.leads);
   const otherPros = useStore((s) => s.otherPros);
   const subscriptions = useStore((s) => s.subscriptions);
-  const appointments = useStore((s) => s.appointments);
-  const funnel = useStore((s) => s.funnel);
   const auditLog = useStore((s) => s.auditLog);
   const toast = useStore((s) => s.toast);
-  const all = buildPros(professional, leads.length, professional.googleCalendar.conectado, otherPros);
-  const pro = all.find((p) => p.id === proId) || all[0];
-  const isOsvaldo = pro.id === "pro_osvaldo";
-  const sub = subscriptions.find((s) => s.professionalId === pro.id);
+  const extras = useAdminExtras();
+  const pro = otherPros.find((p) => p.id === proId) || otherPros[0];
+  const agendados = extras?.agendadosPorPro[pro?.id ?? ""] ?? 0;
+  const sub = subscriptions.find((s) => s.professionalId === pro?.id);
   const [impersonate, setImpersonate] = React.useState(false);
+
+  if (!pro) {
+    return (
+      <div>
+        <button
+          onClick={() => router.push("/admin/profissionais")}
+          style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, color: "var(--muted)", marginBottom: 16 }}
+        >
+          <Icon name="arrowLeft" size={16} /> Profissionais
+        </button>
+        <EmptyState icon="users" title="Profissional não encontrado" body="Essa conta não está mais disponível." />
+      </div>
+    );
+  }
   return (
     <div>
       <button
@@ -949,7 +915,7 @@ export function DetalheConta({ proId }: { proId: string }) {
               </div>
               <div>
                 <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 26, color: "var(--ink)" }}>
-                  {isOsvaldo ? appointments.length : Math.round(pro.leads * 0.4)}
+                  {agendados}
                 </div>
                 <div style={{ fontSize: 12.5, color: "var(--muted)", fontWeight: 600 }}>agendados</div>
               </div>
@@ -973,21 +939,24 @@ export function DetalheConta({ proId }: { proId: string }) {
           <DeskCard>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <h3 style={{ fontSize: 15 }}>Funil publicado</h3>
-              <Badge bg="var(--accent-100)" fg="var(--accent-800)">
-                {OBJ(isOsvaldo ? funnel.objetivo : "agendar").titulo}
-              </Badge>
             </div>
-            <FunnelPreview
-              funnel={
-                isOsvaldo
-                  ? funnel
-                  : {
-                      mensagemBoasVindas: `Oi! Sou ${pro.nome.split(" ")[0]} 🌿 Me conta rapidinho como posso ajudar.`,
-                      perguntas: [{ texto: "O que te interessa?", opcoes: ["Primeira vez", "Retorno"] }],
-                    }
-              }
-              pro={isOsvaldo ? professional : { nome: pro.nome, especialidade: pro.especialidade }}
-            />
+            <div
+              style={{
+                background: "#EBE7DF",
+                borderRadius: 16,
+                padding: "22px 16px",
+                border: "1px solid var(--line)",
+                textAlign: "center",
+                fontSize: 13,
+                color: "var(--muted)",
+                lineHeight: 1.5,
+              }}
+            >
+              <div style={{ color: "var(--faint)", display: "inline-flex", marginBottom: 8 }}>
+                <Icon name="funnel" size={22} />
+              </div>
+              <div>Funil não carregado neste painel.</div>
+            </div>
           </DeskCard>
           <DeskCard>
             <h3 style={{ fontSize: 15, marginBottom: 12 }}>Histórico / auditoria</h3>
@@ -1390,10 +1359,10 @@ export function Lgpd() {
           <DeskCard>
             <h3 style={{ fontSize: 15, marginBottom: 4 }}>Encarregado / DPO</h3>
             <div style={{ display: "flex", alignItems: "center", gap: 11, marginTop: 10 }}>
-              <Avatar name="Ana Beatriz" size={38} bg="var(--accent)" />
+              <Avatar name="LEVERPEAK" size={38} bg="var(--accent)" />
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>Ana Beatriz</div>
-                <div style={{ fontSize: 12.5, color: "var(--muted)" }}>dpo@biofunil.com.br</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>LEVERPEAK</div>
+                <div style={{ fontSize: 12.5, color: "var(--muted)" }}>atendimento@leverpeak.com.br</div>
               </div>
             </div>
           </DeskCard>

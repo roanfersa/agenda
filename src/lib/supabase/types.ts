@@ -37,6 +37,7 @@ export type ProfessionalRow = {
   google_calendar: { conectado: boolean; email: string; calendarId: string };
   calendly_url: string;
   plano: Plano;
+  trial_ends_at: string | null;
   avisos: { email: boolean; push: boolean };
   consentimento_texto_padrao: string;
   feature_flags: Record<string, boolean>;

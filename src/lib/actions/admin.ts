@@ -31,8 +31,53 @@ async function logAudit(actorId: string | null, acao: string) {
 }
 
 export async function resolveLgpdAction(id: string) {
-  const { supabase, ok } = await assertInternal();
+  const { supabase, ok, userId } = await assertInternal();
   if (!ok) return { error: "forbidden" };
+
+  const db = createAdminClient();
+
+  // Carrega o pedido para saber o tipo e o lead relacionado.
+  const { data: req } = await db
+    .from("lgpd_requests")
+    .select("id, tipo, lead_id, lead_nome, professional_id")
+    .eq("id", id)
+    .single();
+
+  // Só o pedido de EXCLUSÃO dispara anonimização efetiva do lead.
+  if (req?.tipo === "exclusao") {
+    // lead_id é a referência direta. Se estiver ausente (ex.: pedido vindo de
+    // data-deletion sem lead casado), tenta o melhor por nome + profissional.
+    let leadIds: string[] = [];
+    if (req.lead_id) {
+      leadIds = [req.lead_id as string];
+    } else if (req.lead_nome && req.professional_id) {
+      const { data: leads } = await db
+        .from("leads")
+        .select("id")
+        .eq("professional_id", req.professional_id)
+        .eq("nome", req.lead_nome);
+      leadIds = (leads ?? []).map((l) => l.id as string);
+    }
+
+    for (const leadId of leadIds) {
+      // Anonimiza o lead (mantém a linha para integridade do consent_log).
+      await db
+        .from("leads")
+        .update({ nome: "[removido]", whatsapp: "", email: null, respostas: [] })
+        .eq("id", leadId);
+      // Remove dados derivados; consent_log é preservado (auditoria LGPD).
+      await db.from("appointments").delete().eq("lead_id", leadId);
+      await db.from("notifications").delete().eq("lead_id", leadId);
+    }
+
+    await logAudit(
+      userId,
+      leadIds.length
+        ? `Concluiu exclusão LGPD e anonimizou ${leadIds.length} lead(s)`
+        : "Concluiu exclusão LGPD (nenhum lead correspondente encontrado)",
+    );
+  }
+
   const { error } = await supabase
     .from("lgpd_requests")
     .update({ status: "concluido" })

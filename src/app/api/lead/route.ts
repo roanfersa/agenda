@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { summarizeLead } from "@/lib/ai/lead-summary";
 import { getValidGoogleToken } from "@/lib/data/google";
 import { createCalendarEvent, proximaOcorrencia } from "@/lib/integrations/google";
+import { sendLeadEmail } from "@/lib/notify/email";
 import type { Resposta } from "@/lib/types";
 
 type Body = {
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
   // 1) Funil precisa existir e estar publicado.
   const { data: funnel } = await db
     .from("funnels")
-    .select("id, professional_id, objetivo, consentimento_texto")
+    .select("id, professional_id, objetivo, consentimento_texto, nome")
     .eq("slug", body.slug)
     .eq("status", "publicado")
     .single();
@@ -144,6 +145,23 @@ export async function POST(request: Request) {
       quando: "Agora mesmo",
     }),
   ]);
+
+  // 6) Aviso por e-mail ao profissional (se ele optou por e-mail). Best-effort.
+  if (prof?.avisos?.email) {
+    try {
+      const { data: u } = await db.auth.admin.getUserById(funnel.professional_id);
+      const proEmail = u?.user?.email;
+      if (proEmail) {
+        await sendLeadEmail(proEmail, {
+          nome: body.nome.trim(),
+          texto: body.agendamento ? `marcou ${body.agendamento.dia}` : "entrou pelo seu funil",
+          funilNome: funnel.nome,
+        });
+      }
+    } catch {
+      // Não bloqueia a resposta se o aviso por e-mail falhar.
+    }
+  }
 
   return NextResponse.json({ ok: true, leadId: lead.id });
 }

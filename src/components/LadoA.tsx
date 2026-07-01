@@ -288,6 +288,8 @@ export function Dashboard({
   const funnel = useStore((s) => s.funnel);
   const toast = useStore((s) => s.toast);
   const novos = leads.filter((l) => l._novo || l.status === "novo").length;
+  const qualificados = leads.filter((l) => l.status !== "novo").length;
+  const taxa = leads.length ? Math.round((qualificados / leads.length) * 100) + "%" : "—";
   const recent = leads.slice(0, 4);
   return (
     <div
@@ -302,7 +304,7 @@ export function Dashboard({
         <StatCard icon="calendar" value={appointments.length} label="Agendamentos" tone="info" />
         <StatCard icon="users" value={leads.length} label="Leads na semana" tone="amber" />
         <div className="hidden lg:block">
-          <StatCard icon="chat" value="68%" label="Taxa de qualificação" tone="accent" />
+          <StatCard icon="chat" value={taxa} label="Taxa de qualificação" tone="accent" />
         </div>
       </div>
       <button
@@ -1027,6 +1029,8 @@ export function ConfigScreen({ go }: { go: (s: string) => void }) {
   const professional = useStore((s) => s.professional);
   const funnels = useStore((s) => s.funnels);
   const funnel = useStore((s) => s.funnel);
+  const automations = useStore((s) => s.automations);
+  const subscription = useStore((s) => s.subscriptions[0]);
   const toast = useStore((s) => s.toast);
   const updateProfessional = useStore((s) => s.updateProfessional);
   const disconnectCalendar = useStore((s) => s.disconnectCalendar);
@@ -1097,7 +1101,7 @@ export function ConfigScreen({ go }: { go: (s: string) => void }) {
         <SettingsRow
           icon="instagram"
           label="Automações do Instagram"
-          value="Comentário → DM · 2 ativas"
+          value={`Comentário → DM · ${automations.filter((a) => a.ativa).length} ativas`}
           onClick={() => go("automacoes")}
         />
       </SettingsGroup>
@@ -1180,10 +1184,19 @@ export function ConfigScreen({ go }: { go: (s: string) => void }) {
             <p style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.5, margin: 0, paddingLeft: 44 }}>{consent}</p>
           )}
         </div>
-        <SettingsRow icon="user" label="Encarregado / DPO" value="osvaldo.reis@gmail.com" />
+        <SettingsRow icon="user" label="Encarregado / DPO" value="atendimento@leverpeak.com.br" />
       </SettingsGroup>
       <SettingsGroup title="Plano">
-        <SettingsRow icon="bolt" label="Meu plano" value="Entrada · R$97/mês" onClick={() => go("planos")} />
+        <SettingsRow
+          icon="bolt"
+          label="Meu plano"
+          value={
+            subscription && subscription.status !== "cancelado"
+              ? `Plano ${subscription.ciclo === "anual" ? "Anual" : "Mensal"} · R$${subscription.valor}${subscription.ciclo === "anual" ? "/ano" : "/mês"}`
+              : "Em teste / sem assinatura"
+          }
+          onClick={() => go("planos")}
+        />
       </SettingsGroup>
       <Card pad={0}>
         <SettingsRow icon="logout" label="Sair" danger onClick={handleSignOut} />

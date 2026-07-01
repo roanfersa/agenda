@@ -284,6 +284,34 @@ export function AppLayout({
           }}
           className="lg:px-8 lg:py-6"
         >
+          {(() => {
+            const t = professional.trialEndsAt;
+            if (!t || professional.plano === "pro") return null;
+            const dias = Math.ceil((new Date(t).getTime() - Date.now()) / 86400000);
+            const ativo = dias > 0;
+            return (
+              <a href="/planos" style={{ textDecoration: "none", display: "block", margin: "0 16px 16px" }} className="lg:mx-0">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    background: ativo ? "var(--accent-050)" : "var(--amber-bg)",
+                    border: `1px solid ${ativo ? "var(--accent-100)" : "var(--amber)"}`,
+                    borderRadius: 12,
+                    padding: "10px 14px",
+                  }}
+                >
+                  <Icon name="bolt" size={17} style={{ color: ativo ? "var(--accent)" : "var(--amber-ink)", flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: ativo ? "var(--accent-800)" : "var(--amber-ink)" }}>
+                    {ativo ? `Teste grátis: ${dias} ${dias === 1 ? "dia" : "dias"} restante${dias === 1 ? "" : "s"}.` : "Seu teste grátis acabou."}{" "}
+                    <b>Assine pra continuar com tudo liberado.</b>
+                  </span>
+                  <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--accent)", flexShrink: 0, whiteSpace: "nowrap" }}>Assinar →</span>
+                </div>
+              </a>
+            );
+          })()}
           {children}
         </div>
       </main>

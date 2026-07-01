@@ -36,7 +36,6 @@ export async function POST(request: Request) {
     console.warn("[IG webhook] assinatura inválida — verifique o App Secret");
     return new Response("invalid signature", { status: 401 });
   }
-  console.log("[IG webhook] evento recebido:", raw.slice(0, 600));
 
   let body: { object?: string; entry?: Entry[] };
   try {
@@ -81,7 +80,7 @@ export async function POST(request: Request) {
           matchKeyword(text, (a.keywords as string[]) ?? []) &&
           (!a.post_id || a.post_id === mediaId),
       );
-      console.log(`[IG webhook] comentário "${text}" mediaId=${mediaId} → automação ${auto ? "CASOU" : "não casou"}`);
+      console.log("[IG webhook] comments recebido, mediaId=", mediaId, "→", auto ? "casou" : "não casou");
       if (!auto) continue;
 
       // Link do funil pra mandar no DM.
@@ -118,8 +117,9 @@ export async function POST(request: Request) {
           .from("automations")
           .update({ stats: { ...stats, comentarios: stats.comentarios + 1, dms: stats.dms + 1 } })
           .eq("id", auto.id);
-      } catch {
+      } catch (e) {
         // Não falha o webhook: Meta reentrega; idempotência já registrou.
+        console.error("[IG webhook] falha ao responder/DM", e);
       }
     }
   }

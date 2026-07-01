@@ -36,6 +36,7 @@ export const toProfessional = (r: ProfessionalRow): Professional => ({
   googleCalendar: r.google_calendar,
   calendlyUrl: r.calendly_url ?? "",
   plano: r.plano,
+  trialEndsAt: r.trial_ends_at ?? undefined,
   avisos: r.avisos,
   consentimentoTextoPadrao: r.consentimento_texto_padrao,
   featureFlags: r.feature_flags ?? {},
@@ -57,6 +58,7 @@ export const fromProfessional = (
   ...(p.googleCalendar !== undefined && { google_calendar: p.googleCalendar }),
   ...(p.calendlyUrl !== undefined && { calendly_url: p.calendlyUrl }),
   ...(p.plano !== undefined && { plano: p.plano }),
+  ...(p.trialEndsAt !== undefined && { trial_ends_at: p.trialEndsAt }),
   ...(p.avisos !== undefined && { avisos: p.avisos }),
   ...(p.consentimentoTextoPadrao !== undefined && {
     consentimento_texto_padrao: p.consentimentoTextoPadrao,

@@ -12,6 +12,14 @@ import type {
   Subscription,
 } from "@/lib/types";
 
+export type AdminAlerta = {
+  professionalId: string;
+  tone: "danger" | "amber" | "info";
+  icon: string;
+  title: string;
+  label: string;
+};
+
 export type AdminData = {
   otherPros: OtherPro[];
   subscriptions: Subscription[];
@@ -22,6 +30,14 @@ export type AdminData = {
   auditLog: AuditEntry[];
   /** Overrides de feature flags por profissional (proId → flags). */
   proFlags: Record<string, Record<string, boolean>>;
+  /** MRR: soma das assinaturas ativas normalizada por mês (arredondada). */
+  mrr: number;
+  /** Contagem de profissionais criados por mês nos últimos 12 meses. */
+  crescimento: { valores: number[]; meses: string[] };
+  /** professionalId → nº de appointments. */
+  agendadosPorPro: Record<string, number>;
+  /** Alertas operacionais derivados de dados reais. */
+  alertas: AdminAlerta[];
 };
 
 const subToProStatus = (s?: string): ProStatus =>
@@ -41,10 +57,11 @@ export async function getAdminBootstrap(): Promise<AdminData | null> {
   if (!interno) return null;
 
   const db = createAdminClient();
-  const [pros, subs, leads, setups, lgpd, consent, team, audit] = await Promise.all([
+  const [pros, subs, leads, appts, setups, lgpd, consent, team, audit] = await Promise.all([
     db.from("professionals").select("id, nome, handle_instagram, especialidade, plano, google_calendar, feature_flags, criado_em"),
     db.from("subscriptions").select("*"),
-    db.from("leads").select("professional_id"),
+    db.from("leads").select("professional_id, criado_em"),
+    db.from("appointments").select("professional_id"),
     db.from("setup_tasks").select("*"),
     db.from("lgpd_requests").select("*").order("criado_em", { ascending: false }),
     db.from("consent_log").select("*"),
@@ -84,6 +101,91 @@ export async function getAdminBootstrap(): Promise<AdminData | null> {
       : "—",
     status: s.status === "trial" ? "em_dia" : s.status,
   }));
+
+  // MRR: assinaturas ativas/em_dia normalizadas por mês.
+  const ativa = (st?: string) => st === "ativo" || st === "em_dia" || st === "trial";
+  const mrr = Math.round(
+    (subs.data ?? []).reduce((acc, s) => {
+      if (!ativa(s.status)) return acc;
+      const v = Number(s.valor) || 0;
+      if (s.ciclo === "anual") return acc + v / 12;
+      if (s.ciclo === "unico") return acc; // única vez não entra no recorrente
+      return acc + v;
+    }, 0),
+  );
+
+  // Crescimento: profissionais criados por mês, últimos 12 meses.
+  const MESES_ABREV = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const agora = new Date();
+  const bucketKeys: string[] = [];
+  const crescMeses: string[] = [];
+  const crescMap = new Map<string, number>();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    bucketKeys.push(key);
+    crescMeses.push(MESES_ABREV[d.getMonth()]);
+    crescMap.set(key, 0);
+  }
+  for (const p of pros.data ?? []) {
+    if (!p.criado_em) continue;
+    const d = new Date(p.criado_em);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (crescMap.has(key)) crescMap.set(key, (crescMap.get(key) ?? 0) + 1);
+  }
+  const crescValores = bucketKeys.map((k) => crescMap.get(k) ?? 0);
+
+  // Agendados por pro: contagem real de appointments.
+  const agendadosPorPro: Record<string, number> = {};
+  for (const a of appts.data ?? [])
+    if (a.professional_id) agendadosPorPro[a.professional_id] = (agendadosPorPro[a.professional_id] ?? 0) + 1;
+
+  // Leads recentes (últimos 30 dias) por pro, para alerta de churn.
+  const limiteRecente = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const leadsRecentesPorPro = new Set<string>();
+  for (const l of leads.data ?? []) {
+    if (!l.professional_id) continue;
+    const d = l.criado_em ? new Date(l.criado_em) : null;
+    if (d && !Number.isNaN(d.getTime()) && d >= limiteRecente) leadsRecentesPorPro.add(l.professional_id);
+  }
+
+  // Alertas derivados de dados reais.
+  const alertas: AdminData["alertas"] = [];
+  for (const s of subs.data ?? []) {
+    if (s.status === "atrasado") {
+      const nome = nomePorPro.get(s.professional_id) ?? "Profissional";
+      alertas.push({
+        professionalId: s.professional_id,
+        tone: "danger",
+        icon: "card",
+        title: "Pagamento em atraso",
+        label: `${nome} · R$${Number(s.valor) || 0}`,
+      });
+    }
+  }
+  for (const p of otherPros) {
+    if (!p.agenda) {
+      alertas.push({
+        professionalId: p.id,
+        tone: "amber",
+        icon: "calendar",
+        title: "Sem agenda conectada",
+        label: p.nome,
+      });
+    }
+  }
+  for (const p of otherPros) {
+    if (p.status === "ativo" && !leadsRecentesPorPro.has(p.id)) {
+      alertas.push({
+        professionalId: p.id,
+        tone: "info",
+        icon: "funnel",
+        title: "Sem leads recentes",
+        label: `${p.nome} · risco de churn`,
+      });
+    }
+  }
 
   const setupTasks: SetupTask[] = (setups.data ?? []).map((t) => ({
     id: t.id,
@@ -130,5 +232,9 @@ export async function getAdminBootstrap(): Promise<AdminData | null> {
       dataHora: new Date(a.data_hora).toLocaleString("pt-BR"),
     })),
     proFlags,
+    mrr,
+    crescimento: { valores: crescValores, meses: crescMeses },
+    agendadosPorPro,
+    alertas,
   };
 }
