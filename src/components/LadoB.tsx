@@ -4,7 +4,7 @@ import * as React from "react";
 import { Icon } from "./Icon";
 import { Avatar, Button, Field, TypingDots } from "./ui";
 import { fmtWhats, OBJ, useStore, waLink } from "@/lib/store";
-import { DEFAULT_THEME, type Disponibilidade, type Funnel, type FunnelBlock, type Objetivo, type Professional, type Resposta } from "@/lib/types";
+import { DEFAULT_THEME, type Disponibilidade, type Funnel, type FunnelBlock, type Objetivo, type Professional, type Recurso, type Resposta } from "@/lib/types";
 
 export type PublicLeadInput = {
   nome: string;
@@ -424,7 +424,7 @@ function PrivacySheet({
 }
 
 /* ---- Blocos estilo Linktree (renderizados no fim do fluxo) -------------- */
-function BlocksSection({ blocks }: { blocks: FunnelBlock[] }) {
+function BlocksSection({ blocks, recursos, whatsapp }: { blocks: FunnelBlock[]; recursos: Recurso[]; whatsapp: string }) {
   const card = (children: React.ReactNode, href?: string, key?: string) => {
     const inner = (
       <div
@@ -453,6 +453,25 @@ function BlocksSection({ blocks }: { blocks: FunnelBlock[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6, animation: "fadeUp .3s both" }}>
+      {recursos
+        .filter((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")
+        .map((r) => {
+          const tipo = r.tipo ?? "link";
+          const href = tipo === "whatsapp" ? waLink(whatsapp, `Oi! Tenho interesse em: ${r.nome}`) : r.link;
+          return card(
+            <>
+              {r.emoji && <span style={{ fontSize: 22 }}>{r.emoji}</span>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14.5, color: "#15211C" }}>{r.nome}</div>
+                {r.descricao && <div style={{ fontSize: 12.5, color: "#6E7A73", marginTop: 1 }}>{r.descricao}</div>}
+              </div>
+              {r.preco && <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap" }}>{r.preco}</span>}
+              <Icon name="arrowRight" size={16} />
+            </>,
+            href,
+            "rec-" + (r.id ?? r.nome),
+          );
+        })}
       {blocks.map((b) => {
         if (b.tipo === "social") {
           return (
@@ -1021,7 +1040,9 @@ export function LadoB({
               </div>
             </div>
           )}
-          {blocks.length > 0 && <BlocksSection blocks={blocks} />}
+          {(blocks.length > 0 || (professional.produtos || []).some((r) => r.ativo !== false && (r.tipo ?? "link") !== "agenda")) && (
+            <BlocksSection blocks={blocks} recursos={professional.produtos || []} whatsapp={professional.whatsapp} />
+          )}
         </div>
         {composer && (
           <div

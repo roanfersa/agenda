@@ -17,6 +17,8 @@ export type ChatReply = {
     label: string;
     url?: string;
     motivo?: string;
+    /** id do recurso recomendado (quando aplicável). */
+    recursoId?: string;
   };
 };
 
@@ -46,12 +48,17 @@ export async function nextChatTurn(input: {
   const client = getAnthropic();
   if (!client) return fallback();
 
+  const ativos = input.produtos.filter((p) => p.ativo !== false);
   const produtos =
-    input.produtos.length > 0
-      ? input.produtos
-          .map((p) => `- ${p.nome}: ${p.descricao}${p.preco ? ` (${p.preco})` : ""}${p.link ? ` [link: ${p.link}]` : ""}`)
+    ativos.length > 0
+      ? ativos
+          .map(
+            (p) =>
+              `- id=${p.id ?? ""} tipo=${p.tipo ?? "link"} | ${p.nome}: ${p.descricao}` +
+              `${p.preco ? ` (${p.preco})` : ""}${p.link ? ` [url: ${p.link}]` : ""}`,
+          )
           .join("\n")
-      : "(nenhum produto cadastrado)";
+      : "(nenhum recurso cadastrado)";
   const materiais =
     input.materiais && input.materiais.length > 0
       ? "\nMATERIAIS DE REFERÊNCIA:\n" +
@@ -69,20 +76,21 @@ export async function nextChatTurn(input: {
       system:
         `Você é o assistente do profissional ${input.nome} (${input.especialidade}). ` +
         `Objetivo do funil: ${input.objetivo}. ` +
-        `Você conversa com um visitante para qualificá-lo com poucas perguntas (1 por vez) e, quando tiver contexto suficiente (2-3 trocas), recomendar o melhor próximo passo. ` +
-        (input.permiteAgendar ? "Agendar no próprio chat é permitido. " : "NÃO ofereça agendamento. ") +
-        "Use os produtos abaixo para recomendar um link quando fizer sentido.\n\n" +
-        `PRODUTOS:\n${produtos}${materiais}\n\n` +
+        `Seu papel: em NO MÁXIMO 1-2 perguntas curtas (1 por vez), entender a necessidade e recomendar UM recurso da lista. Seja breve e objetivo — não tome o tempo da pessoa. ` +
+        (input.permiteAgendar ? "Agendar é permitido. " : "NÃO ofereça agendamento. ") +
+        "Recomende sempre UM recurso da lista abaixo (o mais adequado).\n\n" +
+        `RECURSOS:\n${produtos}${materiais}\n\n` +
         "Responda SEMPRE em JSON válido, sem texto fora dele: " +
         '{"mensagem":string (pt-BR, informal, curto),"opcoes"?:string[] (2-4 respostas rápidas, opcional),"fase":"perguntando"|"recomendar",' +
-        '"recomendacao"?:{"tipo":"agendar"|"link"|"whatsapp","label":string,"url"?:string,"motivo"?:string}}. ' +
-        "Enquanto estiver qualificando use fase=perguntando. Quando recomendar, fase=recomendar e preencha recomendacao (url = link do produto quando tipo=link).",
+        '"recomendacao"?:{"tipo":"agendar"|"link"|"whatsapp","label":string,"url"?:string,"motivo"?:string,"recursoId":string}}. ' +
+        "Faça no máximo 2 perguntas (fase=perguntando); a partir daí, fase=recomendar e preencha recomendacao. " +
+        "Mapeie o tipo do recurso: tipo=agenda→\"agendar\"; tipo=link ou pdf→\"link\" (url = a url do recurso); tipo=whatsapp→\"whatsapp\". Preencha recursoId com o id do recurso escolhido.",
       messages: [
         {
           role: "user",
           content:
             `Perguntas-base sugeridas: ${input.perguntasBase.join(" | ") || "(livre)"}\n\n` +
-            `Conversa até agora:\n${historico}\n\nGere o próximo turno do bot.`,
+            `Conversa até agora:\n${historico}\n\nGere o próximo turno do bot (lembre: no máximo 2 perguntas antes de recomendar).`,
         },
       ],
     });
